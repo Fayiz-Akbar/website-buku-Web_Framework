@@ -1,4 +1,5 @@
 <?php
+// File: Backend/database/factories/UserFactory.php
 
 namespace Database\Factories;
 
@@ -12,7 +13,7 @@ use Illuminate\Support\Str;
 class UserFactory extends Factory
 {
     /**
-     * The current password being used by the factory.
+     * Kata sandi saat ini yang digunakan oleh factory.
      */
     protected static ?string $password;
 
@@ -24,11 +25,17 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            // Gunakan 'full_name' sesuai migrasi kita
+            'full_name' => fake()->name(), // <-- Ganti 'name' menjadi 'full_name'
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
+            // Gunakan Hash facade untuk password
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            // Default role adalah 'user' (sesuai migrasi)
+            'role' => 'user',
+            // Tambahkan profile_image_url opsional
+            'profile_image_url' => fake()->optional()->imageUrl(),
         ];
     }
 
