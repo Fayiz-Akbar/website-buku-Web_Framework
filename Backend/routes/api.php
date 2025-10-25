@@ -17,7 +17,7 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\AuthorController;
 use App\Http\Controllers\Api\PublisherController;
 use App\Http\Controllers\Api\AdminOrderController;
-
+use App\Http\Controllers\Api\CartController;
 
 /*
 |--------------------------------------------------------------------------
@@ -93,4 +93,43 @@ Route::middleware(['auth:sanctum', 'admin'])
             'user' => $request->user(),
         ]);
     });
+
+    // =======================================================
+// RUTE YANG MEMERLUKAN OTENTIKASI (HARUS LOGIN)
+// =======================================================
+Route::middleware('auth:sanctum')->group(function () {
+
+    // Endpoint untuk Logout (sudah ada di AuthController)
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    // --- Rute Keranjang (Cart) ---
+
+    /**
+     * Mengambil item keranjang milik user yang sedang login.
+     * GET /api/cart
+     */
+    Route::get('/cart', [CartController::class, 'index']);
+
+    /**
+     * Menambah buku ke keranjang.
+     * POST /api/cart/add
+     * Body: { "book_id": 1, "quantity": 1 }
+     */
+    Route::post('/cart/add', [CartController::class, 'addBook']);
+
+    /**
+     * Menghapus item dari keranjang.
+     * DELETE /api/cart/remove/{cartItemId}
+     */
+    Route::delete('/cart/remove/{cartItemId}', [CartController::class, 'removeBook']);
+
+    /**
+     * Mengupdate jumlah item di keranjang.
+     * PUT /api/cart/update/{cartItemId}
+     * Body: { "quantity": 3 }
+     */
+    Route::put('/cart/update/{cartItemId}', [CartController::class, 'updateQuantity']);
+
+});
+
 });
