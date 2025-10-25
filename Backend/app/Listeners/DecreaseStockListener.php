@@ -4,10 +4,10 @@
 namespace App\Listeners;
 
 use App\Events\OrderProcessed;
-use App\Models\Book; // <-- 1. Import model Book
-use Illuminate\Contracts\Queue\ShouldQueue; // (Opsional: untuk performa)
+use App\Models\Book; // <-- Import Book
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Facades\Log; // <-- 2. Untuk logging
+use Illuminate\Support\Facades\Log; // <-- Import Log
 
 class DecreaseStockListener
 {
@@ -21,33 +21,29 @@ class DecreaseStockListener
 
     /**
      * Handle the event.
-     * Ini adalah "otak" yang menggantikan trigger DB kita.
+     * Ini akan dipanggil otomatis oleh Laravel
+     * setiap kali 'OrderProcessed' di-dispatch.
      */
     public function handle(OrderProcessed $event): void
     {
-        Log::info("Menjalankan DecreaseStockListener untuk Order ID: {$event->order->id}");
+        // $event->order berisi data order dari CheckoutService
+        $order = $event->order;
 
         try {
-            // 3. Ambil semua item dari pesanan yang dibawa oleh event
-            $orderItems = $event->order->items;
-
-            foreach ($orderItems as $item) {
-                // 4. Temukan buku yang sesuai
+            // Loop setiap item dalam order
+            foreach ($order->items as $item) {
+                // Cari buku-nya
                 $book = Book::find($item->book_id);
-
+                
                 if ($book) {
-                    // 5. Kurangi stok (decrement)
-                    $book->decrement('stock', $item->quantity);
-                    Log::info("Stok buku #{$book->id} dikurangi {$item->quantity}. Stok sisa: {$book->stock}");
-                } else {
-                    Log::warning("Buku #{$item->book_id} tidak ditemukan untuk pengurangan stok.");
+                    // Kurangi stok
+                    $book->stock -= $item->quantity;
+                    $book->save();
                 }
             }
         } catch (\Exception $e) {
-            // 6. Catat jika terjadi error
-            Log::error("Error saat mengurangi stok: " . $e->getMessage());
-            // Di aplikasi produksi, kamu mungkin ingin mengirim notifikasi
-            // ke admin jika ini gagal.
+            // Catat jika ada error saat pengurangan stok
+            Log::error('Gagal mengurangi stok untuk Order ID: ' . $order->id . ' - Error: ' . $e->getMessage());
         }
     }
 }

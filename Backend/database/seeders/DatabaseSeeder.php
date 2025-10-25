@@ -7,6 +7,7 @@ use App\Models\Author;
 use App\Models\Book;
 use App\Models\Category;
 use App\Models\Publisher;
+use App\Models\UserAddress;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -28,14 +29,19 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // 2. Buat User Biasa
-        User::factory()->create([
+        // [PERBAIKAN 2] Simpan user ke dalam variabel
+        $testUser = User::factory()->create([
             'full_name' => 'Test User',
             'email' => 'user@example.com',
             'password' => Hash::make('password'),
             'role' => 'user',
         ]);
 
-        // 3. [PERBAIKAN] Buat 15 Kategori secara deterministik (pasti)
+        // [PERBAIKAN 3] Buat 1 alamat utama untuk $testUser
+        UserAddress::factory()->create([
+            'user_id' => $testUser->id,
+            'is_primary' => true,
+        ]);
         
         // Daftar nama kategori yang kita inginkan
         $categoryNames = [

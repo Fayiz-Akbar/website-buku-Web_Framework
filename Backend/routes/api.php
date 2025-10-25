@@ -51,6 +51,13 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user();
     });
 
+    Route::get('/cart', [CartController::class, 'index']);
+    Route::post('/cart/add', [CartController::class, 'addBook']); // <-- Ini perbaikan dari respon #33
+    Route::put('/cart/{cartItemId}', [CartController::class, 'updateQuantity']);
+    Route::delete('/cart/{cartItemId}', [CartController::class, 'removeBook']);
+
+    Route::post('/checkout', [CheckoutController::class, 'processCheckout']);
+
 });
 
 
@@ -94,42 +101,5 @@ Route::middleware(['auth:sanctum', 'admin'])
         ]);
     });
 
-    // =======================================================
-// RUTE YANG MEMERLUKAN OTENTIKASI (HARUS LOGIN)
-// =======================================================
-Route::middleware('auth:sanctum')->group(function () {
-
-    // Endpoint untuk Logout (sudah ada di AuthController)
-    Route::post('/logout', [AuthController::class, 'logout']);
-
-    // --- Rute Keranjang (Cart) ---
-
-    /**
-     * Mengambil item keranjang milik user yang sedang login.
-     * GET /api/cart
-     */
-    Route::get('/cart', [CartController::class, 'index']);
-
-    /**
-     * Menambah buku ke keranjang.
-     * POST /api/cart/add
-     * Body: { "book_id": 1, "quantity": 1 }
-     */
-    Route::post('/cart/add', [CartController::class, 'addBook']);
-
-    /**
-     * Menghapus item dari keranjang.
-     * DELETE /api/cart/remove/{cartItemId}
-     */
-    Route::delete('/cart/remove/{cartItemId}', [CartController::class, 'removeBook']);
-
-    /**
-     * Mengupdate jumlah item di keranjang.
-     * PUT /api/cart/update/{cartItemId}
-     * Body: { "quantity": 3 }
-     */
-    Route::put('/cart/update/{cartItemId}', [CartController::class, 'updateQuantity']);
-
-});
 
 });

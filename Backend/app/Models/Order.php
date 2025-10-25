@@ -16,12 +16,12 @@ class Order extends Model
 
     protected $fillable = [
         'user_id',
-        'user_address_id',
-        'order_code',
         'status',
-        'total_items_price',
-        'shipping_cost',
         'total_amount',
+        'discount_amount',
+        'final_amount',
+        'shipping_notes',
+        'user_address_id', // <-- [PERBAIKAN] Tambahkan baris ini
     ];
 
     /**

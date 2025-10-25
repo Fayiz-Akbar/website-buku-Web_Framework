@@ -4,63 +4,64 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\CheckoutService; // <-- 1. Import Service kita
+use App\Services\CheckoutService; // <-- Import Service kita
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; // Untuk mendapatkan user yang login
-use Illuminate\Support\Facades\Log; // Untuk logging
-use InvalidArgumentException; // Untuk menangkap error dari service
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class CheckoutController extends Controller
 {
-    // 2. Deklarasikan properti untuk menampung service
-    protected CheckoutService $checkoutService;
+    protected $checkoutService;
 
-    // 3. Inject Service melalui constructor (Dependency Injection)
+    // Kita "suntik" (inject) service kita ke controller
     public function __construct(CheckoutService $checkoutService)
     {
         $this->checkoutService = $checkoutService;
     }
 
     /**
-     * Menangani request POST untuk melakukan checkout.
+     * Menangani request checkout dari user.
+     * POST /api/checkout
      */
-    public function store(Request $request)
+    public function processCheckout(Request $request)
     {
-        // 4. Validasi request dari Frontend (React)
-        $validated = $request->validate([
-            // Pastikan frontend mengirim ID alamat yang dipilih
-            'user_address_id' => 'required|integer|exists:user_addresses,id', 
-            // Biaya kirim mungkin didapat dari frontend atau dihitung di sini
-            'shipping_cost' => 'sometimes|numeric|min:0', 
+        $user = $request->user();
+
+        // 1. Validasi Input (Request akan berupa form-data)
+        $validator = Validator::make($request->all(), [
+            // Sesuai permintaanmu, user input jumlah yang dibayar
+            'amount_paid' => 'required|numeric|min:1',
+            
+            // Sesuai permintaanmu, user upload bukti bayar
+            'payment_proof' => 'required|image|mimes:jpg,png,jpeg|max:2048', // Maks 2MB
+            
+            // Kita butuh alamat pengiriman
+            // 'exists' akan cek ke tabel 'user_addresses' kolom 'id'
+            // dan memastikan alamat itu milik 'user_id' yang sedang login
+            'user_address_id' => [
+                'required',
+                'integer',
+                'exists:user_addresses,id,user_id,' . $user->id 
+            ],
         ]);
 
-        // 5. Dapatkan user yang sedang login
-        $user = Auth::user();
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
 
         try {
-            // 6. Panggil Service (Perintah si "Bos" ke "Manajer")
-            // Kita panggil metode 'processCheckout' yang sudah kita buat
-            $order = $this->checkoutService->processCheckout(
-                $user,
-                $validated['user_address_id'],
-                $validated['shipping_cost'] ?? 0.00 // Ambil ongkir atau default 0
-            );
+            // 2. Panggil "otak"-nya (Service)
+            $order = $this->checkoutService->process($user, $request->all());
 
-            // 7. Jika berhasil, kirim response sukses ke React
+            // 3. Kembalikan response sukses
             return response()->json([
-                'message' => 'Checkout berhasil diproses.',
-                'order_code' => $order->order_code, // Kirim kode order untuk info
-                'order_id' => $order->id,         // Kirim ID order untuk redirect mungkin
-                'total_amount' => $order->total_amount, // Total yang harus dibayar
-            ], 201); // Kode 201 artinya 'Created'
+                'message' => 'Checkout berhasil, pesanan sedang diproses.',
+                'order_id' => $order->id,
+            ], 201); // 201 Created
 
-        } catch (InvalidArgumentException $e) {
-            // 8a. Tangani error validasi dari Service (Keranjang kosong / Alamat salah)
-            return response()->json(['message' => $e->getMessage()], 400); // Kode 400 Bad Request
         } catch (\Exception $e) {
-            // 8b. Tangani error database atau error tak terduga lainnya
-            Log::error("Checkout Gagal: " . $e->getMessage());
-            return response()->json(['message' => 'Terjadi kesalahan saat memproses checkout.'], 500); // Kode 500 Internal Server Error
+            // 4. Tangkap error (misal: stok habis, keranjang kosong)
+            return response()->json(['message' => $e->getMessage()], 400);
         }
     }
 }
