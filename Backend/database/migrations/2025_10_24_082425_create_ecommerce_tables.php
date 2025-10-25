@@ -54,7 +54,7 @@ return new class extends Migration
             $table->decimal('discount_amount', 15, 2)->default(0);
              $table->decimal('final_amount', 15, 2);
             $table->decimal('shipping_cost', 12, 2)->default(0.00);
-            $table->decimal('total_amount', 12, 2);
+            $table->decimal('total_amount', 12, 2)->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
