@@ -67,12 +67,26 @@ class AuthController extends Controller
         // Jika berhasil, buat token Sanctum
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        // --- PERUBAHAN DIMULAI DI SINI ---
+
         return response()->json([
-            'message' => 'Login successful',
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'user' => $user // Kirim data user juga
+            // 'message' => 'Login successful', // Opsional, frontend tidak memerlukannya
+            
+            // 1. Ganti 'access_token' menjadi 'token'
+            'token' => $token, 
+            
+            // 'token_type' => 'Bearer', // Opsional, frontend tidak memerlukannya
+            
+            // 2. Filter data user
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role, // Pastikan kolom 'role' ada di tabel users
+            ]
         ]);
+        
+        // --- PERUBAHAN SELESAI ---
     }
 
     /**

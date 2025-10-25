@@ -8,6 +8,8 @@ use App\Http\Resources\BookResource; // <-- 1. Import Resource kita
 use App\Models\Book; // <-- Import Model
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection; // Untuk koleksi
+use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Response;
 
 class BookController extends Controller
 {
@@ -115,17 +117,17 @@ class BookController extends Controller
             'category_ids.*' => 'integer|exists:categories,id',
         ]);
 
-        DB::transaction(function () use ($book, $validated) {
-            $book->update($validated);
+        DB::transaction(function () use ($book, $validated, $request) { // <-- TAMBAHKAN $request DI SINI
+        $book->update($validated);
 
-            // Update relasi N-N (gunakan sync agar relasi lama terhapus)
-            if ($request->has('author_ids')) { // Cek apakah array dikirim
-                $book->authors()->sync($validated['author_ids'] ?? []); // Sync dengan array kosong jika null
-            }
-            if ($request->has('category_ids')) {
-                $book->categories()->sync($validated['category_ids'] ?? []);
-            }
-        });
+        // Update relasi N-N (gunakan sync agar relasi lama terhapus)
+        if ($request->has('author_ids')) { // Cek apakah array dikirim
+            $book->authors()->sync($validated['author_ids'] ?? []); // Sync dengan array kosong jika null
+        }
+        if ($request->has('category_ids')) {
+            $book->categories()->sync($validated['category_ids'] ?? []);
+        }
+    });
 
 
         // Kembalikan data buku yang sudah diupdate

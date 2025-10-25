@@ -4,57 +4,88 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// Import Controller
+
+/*
+|--------------------------------------------------------------------------
+| Import Semua Controller (Kita standarkan semua di 'Api' Namespace)
+|--------------------------------------------------------------------------
+*/
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookController;
 use App\Http\Controllers\Api\CheckoutController;
-// use App\Http\Controllers\Api\Admin\AdminOrderController; // Untuk nanti
+use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\AuthorController;
+use App\Http\Controllers\Api\PublisherController;
+use App\Http\Controllers\Api\AdminOrderController;
 
 
-// =================================================================
-// RUTE PUBLIK
-// =================================================================
-// Buku (Read-Only)
-Route::get('/books', [BookController::class, 'index']); // Daftar buku (paginasi)
-Route::get('/books/{id}', [BookController::class, 'show']); // Detail buku
-
+/*
+|--------------------------------------------------------------------------
+| RUTE PUBLIK (Tidak perlu login)
+|--------------------------------------------------------------------------
+*/
 // Autentikasi
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+// Read-Only Buku
+Route::get('/books', [BookController::class, 'index']); // Daftar buku (paginasi)
+Route::get('/books/{id}', [BookController::class, 'show']); // Detail buku
 
-// =================================================================
-// RUTE USER (Perlu Login - auth:sanctum)
-// =================================================================
+
+/*
+|--------------------------------------------------------------------------
+| RUTE USER (Perlu Login - auth:sanctum)
+|--------------------------------------------------------------------------
+*/
 Route::middleware('auth:sanctum')->group(function () {
     
-    // Logout
     Route::post('/logout', [AuthController::class, 'logout']);
     
-    // Checkout
+    // Alur Checkout
     Route::post('/checkout', [CheckoutController::class, 'store']);
 
     // (Rute lain untuk user: cart, my-orders, my-profile, dll.)
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
 
 });
 
 
-// =================================================================
-// RUTE ADMIN (Perlu Login & Role Admin - ['auth:sanctum', 'admin'])
-// =================================================================
+/*
+|--------------------------------------------------------------------------
+| RUTE ADMIN (Perlu Login & Role Admin - ['auth:sanctum', 'admin'])
+|--------------------------------------------------------------------------
+*/
 Route::middleware(['auth:sanctum', 'admin'])
     ->prefix('admin') // URL prefix /api/admin/...
     ->group(function () {
 
-    // CRUD Buku Lengkap
-    Route::post('/books', [BookController::class, 'store']);    // Create
-    // (Read sudah ada di publik, tapi bisa juga ditambahkan di sini jika perlu)
-    Route::put('/books/{id}', [BookController::class, 'update']);     // Update (PUT atau PATCH)
-    Route::delete('/books/{id}', [BookController::class, 'destroy']); // Delete (Soft Delete)
-
-    // (Rute lain untuk admin: CRUD authors, publishers, categories, manage orders, dashboard, dll.)
+    // (Langkah 2) CRUD Kategori
+    Route::apiResource('/categories', CategoryController::class);
     
-    // Rute Tes Keamanan
+    // (Langkah 2) CRUD Penulis
+    Route::apiResource('/authors', AuthorController::class);
+    
+    // (Langkah 2) CRUD Penerbit
+    Route::apiResource('/publishers', PublisherController::class);
+
+    // (Langkah 3) CRUD Buku
+    // Kita hanya gunakan 'store', 'update', 'destroy'
+    // karena 'index' dan 'show' sudah ada di rute publik.
+    Route::apiResource('/books', BookController::class)->only([
+        'store', 'update', 'destroy'
+    ]);
+    
+    // (Langkah 4) Manajemen Pesanan
+    Route::get('/orders', [AdminOrderController::class, 'index']);
+    Route::get('/orders/{order}', [AdminOrderController::class, 'show']);
+    Route::post('/orders/{order}/approve', [AdminOrderController::class, 'approve']);
+    Route::post('/orders/{order}/reject', [AdminOrderController::class, 'reject']);
+
+    
+    // Rute Tes Keamanan (dari file Anda)
     Route::get('/test', function (Request $request) {
         return response()->json([
             'message' => 'Selamat datang, Admin!',

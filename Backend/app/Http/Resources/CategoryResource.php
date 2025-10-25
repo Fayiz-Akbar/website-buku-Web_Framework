@@ -1,7 +1,7 @@
 <?php
 // File: Backend/app/Http/Resources/CategoryResource.php
 
-namespace App\Http; // Namespace default App\Http
+namespace App\Http\Resources; // Namespace default App\Http
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
