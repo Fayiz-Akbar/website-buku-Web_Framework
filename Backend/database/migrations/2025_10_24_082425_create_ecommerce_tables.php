@@ -66,7 +66,9 @@ return new class extends Migration
             $table->foreignId('book_id')->nullable()->constrained('books')->onDelete('set null');
             $table->integer('quantity')->unsigned();
             // Data Snapshot (dicopy oleh Laravel saat checkout)
-            $table->string('snapshot_book_title');
+            $table->decimal('price', 15, 2); // Harga per item SAAT order dibuat
+
+            $table->string('snapshot_book_title'); // Judul buku SAAT order dibuat
             $table->decimal('snapshot_price_per_item', 12, 2);
             $table->timestamps();
         });
@@ -74,12 +76,17 @@ return new class extends Migration
         // Pembayaran (Payments)
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('order_id')->constrained('orders')->onDelete('restrict');
-            $table->enum('status', ['pending', 'paid', 'failed', 'expired', 'waiting_validation'])->default('pending');
-            $table->string('method')->default('qris_manual');
-            $table->decimal('amount_due', 12, 2);
-            $table->decimal('amount_paid', 12, 2)->nullable();
-            $table->string('proof_image_url')->nullable();
+        $table->foreignId('order_id')->constrained('orders')->onDelete('cascade');
+        $table->string('method');
+        $table->enum('status', ['pending', 'paid', 'failed', 'expired', 'waiting_validation'])->default('pending');
+        $table->decimal('amount_due', 15, 2);
+        $table->decimal('amount_paid', 15, 2)->nullable();
+        $table->timestamp('payment_date')->nullable();
+
+        // [PERBAIKAN] Tambahkan kolom ini
+        $table->string('payment_proof_url')->nullable(); // URL bukti bayar
+
+        $table->string('transaction_id')->nullable();
             $table->text('admin_notes')->nullable();
             $table->timestamp('paid_at')->nullable();
             $table->timestamp('confirmed_at')->nullable();

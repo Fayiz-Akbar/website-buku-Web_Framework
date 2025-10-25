@@ -23,8 +23,8 @@ class OrderItem extends Model
         'order_id',
         'book_id',
         'quantity',
-        'snapshot_book_title',
-        'snapshot_price_per_item',
+        'price',
+        'snapshot_book_title', // <-- [PERBAIKAN] Tambahkan ini
     ];
 
     /**

@@ -75,10 +75,12 @@ class CheckoutService
                 }
 
                 $order->items()->create([
-                    'book_id' => $cartItem->book_id,
-                    'quantity' => $cartItem->quantity,
-                    'price' => $cartItem->price, // Ambil harga saat itu
-                ]);
+                'order_id' => $order->id, // Explisit tambahkan order_id
+                'book_id' => $cartItem->book_id,
+                'quantity' => $cartItem->quantity,
+                'price' => $cartItem->price,
+                'snapshot_book_title' => $book->title, // <-- Ambil judul dari $book
+            ]);
             }
 
             // 8. Kosongkan keranjang
