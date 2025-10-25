@@ -74,6 +74,10 @@ class CheckoutService
                     throw new \Exception('Stok untuk buku "' . $book->title . '" tidak mencukupi.');
                 }
 
+                if (is_null($cartItem->price)) {
+                throw new \Exception('Harga untuk item keranjang ID: ' . $cartItem->id . ' (Buku: ' . $book->title . ') tidak ditemukan. Coba hapus dan tambahkan ulang ke keranjang.');
+            }
+
                 $order->items()->create([
                 'order_id' => $order->id, // Explisit tambahkan order_id
                 'book_id' => $cartItem->book_id,
