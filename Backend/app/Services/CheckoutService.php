@@ -56,10 +56,13 @@ class CheckoutService
 
             // 6. Buat entri Payment
             $order->payment()->create([
-                'method' => 'qris_manual', // Sesuai permintaanmu
-                'status' => 'waiting_validation', // Menunggu validasi admin
-                'amount' => $data['amount_paid'], // Jumlah yang diinput user
+                'order_id' => $order->id, // [PERBAIKAN] Explisit tambahkan order_id
+                'method' => 'qris_manual',
+                'status' => 'waiting_validation',
+                'amount_due' => $order->final_amount, // <-- [PERBAIKAN] Jumlah yang HARUS dibayar
+                'amount_paid' => $data['amount_paid'], // Jumlah yang DIINPUT user
                 'payment_proof_url' => $filePath,
+                'payment_date' => now(), // [PERBAIKAN] Tambahkan tanggal pembayaran (opsional tapi bagus)
             ]);
 
             // 7. Pindahkan item dari Cart ke OrderItem

@@ -16,16 +16,15 @@ class Payment extends Model
      * Kita tidak menggunakan SoftDeletes di sini.
      */
 
-    protected $fillable = [
+   protected $fillable = [
         'order_id',
+        'method',
         'status',
-        'payment_method',
-        'amount_due',
-        'amount_paid',
-        'proof_image_url',
-        'admin_notes',
-        'paid_at',
-        'confirmed_at',
+        'amount_due', // <-- [PERBAIKAN] Tambahkan ini
+        'amount_paid', // <-- [PERBAIKAN] Tambahkan ini
+        'payment_date', // <-- [PERBAIKAN] Tambahkan ini
+        'payment_proof_url', // <-- [PERBAIKAN] Tambahkan ini
+        // Tambahkan kolom lain jika ada (misal: transaction_id, etc.)
     ];
 
     /**

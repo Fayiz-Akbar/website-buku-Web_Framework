@@ -75,8 +75,8 @@ return new class extends Migration
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->constrained('orders')->onDelete('restrict');
-            $table->string('status')->default('pending');
-            $table->string('payment_method')->default('qris_manual');
+            $table->enum('status', ['pending', 'paid', 'failed', 'expired', 'waiting_validation'])->default('pending');
+            $table->string('method')->default('qris_manual');
             $table->decimal('amount_due', 12, 2);
             $table->decimal('amount_paid', 12, 2)->nullable();
             $table->string('proof_image_url')->nullable();
