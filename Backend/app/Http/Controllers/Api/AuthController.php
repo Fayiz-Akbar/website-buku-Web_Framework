@@ -79,10 +79,20 @@ class AuthController extends Controller
 
         // 5. Kembalikan Response
         return response()->json([
-            'message' => 'Login berhasil.',
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'user' => $user // Kirim data user juga
+            // 'message' tidak wajib untuk frontend
+            
+            // Key 'token' (bukan 'access_token')
+            'token' => $token, 
+            
+            // 'token_type' tidak wajib untuk frontend
+
+            // Filter data user agar hanya mengirim yang perlu
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->full_name, // Gunakan 'full_name' sesuai model Anda
+                'email' => $user->email,
+                'role' => $user->role, 
+            ]
         ]);
         
         // --- PERUBAHAN SELESAI ---

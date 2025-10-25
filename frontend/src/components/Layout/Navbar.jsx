@@ -1,11 +1,16 @@
 // frontend/src/components/Layout/Navbar.jsx
 
 import React from 'react';
+import { useAuth } from '../../Context/AuthContext'; // Sesuaikan path jika perlu
+import { useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
+  const { logout, user } = useAuth(); // Ambil 'logout' dan 'user' dari context
+  const navigate = useNavigate();
+
   const handleLogout = () => {
-    // TODO: Tambahkan logika logout (menghapus token dan redirect ke /login)
-    alert('Log out...'); 
+    logout();          // Panggil fungsi logout dari AuthContext
+    navigate('/login');
   };
 
   return (

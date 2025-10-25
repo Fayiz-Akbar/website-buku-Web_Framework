@@ -11,6 +11,7 @@ use App\Models\Book;
 use App\Models\UserAddress;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -25,7 +26,7 @@ class DatabaseSeeder extends Seeder
             'full_name' => 'Admin User',
             'email' => 'admin@example.com',
             'role' => 'admin', // Set role admin
-            // Password default adalah 'password' (dari UserFactory)
+            'password' => Hash::make('password'),
 
         ]);
 
