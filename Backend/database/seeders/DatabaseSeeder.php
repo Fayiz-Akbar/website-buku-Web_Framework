@@ -1,17 +1,16 @@
 <?php
-// File: Backend/database/seeders/DatabaseSeeder.php
+
 namespace Database\Seeders;
 
 use App\Models\User;
-
 use App\Models\Author;
-use App\Models\Publisher;
-use App\Models\Category;
 use App\Models\Book;
-use App\Models\UserAddress;
-
+use App\Models\Category;
+use App\Models\Publisher;
+// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str; // [PERBAIKAN] Import Str untuk slug
 
 class DatabaseSeeder extends Seeder
 {
@@ -20,65 +19,62 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-
         // 1. Buat User Admin
         User::factory()->create([
             'full_name' => 'Admin User',
             'email' => 'admin@example.com',
-            'role' => 'admin', // Set role admin
             'password' => Hash::make('password'),
-
+            'role' => 'admin',
         ]);
 
         // 2. Buat User Biasa
-        $userBiasa = User::factory()->create([
+        User::factory()->create([
             'full_name' => 'Test User',
-            'email' => 'test@example.com',
+            'email' => 'user@example.com',
+            'password' => Hash::make('password'),
             'role' => 'user',
         ]);
 
-        // 3. Buat Alamat untuk User Biasa
-        UserAddress::factory()->create([
-            'user_id' => $userBiasa->id,
-            'is_primary' => true,
-        ]);
-        // Buat beberapa alamat tambahan (opsional)
-        UserAddress::factory(2)->create([
-            'user_id' => $userBiasa->id,
-            'is_primary' => false,
-        ]);
-
-
-        // 4. Buat Data Master
-        // Pastikan kita punya cukup data untuk relasi
-        $authors = Author::factory(10)->create();
-        $publishers = Publisher::factory(5)->create();
-        $categories = Category::factory(8)->create();
-
-        // 5. Buat Buku dan Lampirkan Relasi
-        // Pastikan Publisher tidak kosong sebelum loop
-        if ($publishers->isEmpty()) {
-             // Handle jika tidak ada publisher, mungkin buat satu default
-             $publishers = collect([Publisher::factory()->create(['name' => 'Default Publisher'])]);
-        }
+        // 3. [PERBAIKAN] Buat 15 Kategori secara deterministik (pasti)
         
-        Book::factory(30) // Buat 30 buku
-            ->recycle($publishers) // Gunakan publisher yang ada secara acak
-            ->create()
-            ->each(function (Book $book) use ($authors, $categories) {
-                // Lampirkan 1-3 penulis acak
-                if ($authors->isNotEmpty()) {
-                    $book->authors()->attach(
-                        $authors->random(rand(1, min(3, $authors->count())))->pluck('id')->toArray()
-                    );
-                }
-                // Lampirkan 1-2 kategori acak
-                if ($categories->isNotEmpty()) {
-                    $book->categories()->attach(
-                        $categories->random(rand(1, min(2, $categories->count())))->pluck('id')->toArray()
-                    );
-                }
+        // Daftar nama kategori yang kita inginkan
+        $categoryNames = [
+            'Novel', 'Komik', 'Biografi', 'Pengembangan Diri', 'Sains',
+            'Teknologi', 'Sejarah', 'Agama', 'Pendidikan', 'Anak-Anak',
+            'Fiksi Ilmiah', 'Horor', 'Misteri', 'Romansa', 'Bisnis'
+        ];
+
+        // Ubah array nama menjadi array sequence untuk factory
+        // ['Novel'] -> ['name' => 'Novel', 'slug' => 'novel']
+        $categorySequence = collect($categoryNames)->map(fn ($name) => [
+            'name' => $name,
+            'slug' => Str::slug($name, '-')
+        ])->all();
+
+        // Panggil factory 15 kali, dan gunakan sequence yang sudah kita buat
+        // Ini akan memakai data dari $categorySequence satu per satu, urut
+        $categories = Category::factory()->count(15)->sequence(...$categorySequence)->create();
+
+
+        // 4. Buat Penulis (Misal kita buat 50 penulis)
+        $authors = Author::factory(50)->create();
+
+        // 5. Buat Penerbit (Misal kita buat 20 penerbit)
+        $publishers = Publisher::factory(20)->create();
+
+        // 6. Buat 200 Buku (Kode ini sudah benar)
+        Book::factory(200)->create()->each(function ($book) use ($authors, $categories, $publishers) {
+            
+            $book->publisher_id = $publishers->random()->id;
+            $book->save(); 
+
+            $book->authors()->attach(
+                $authors->random(rand(1, 3))->pluck('id')->toArray()
+            );
+
+            $book->categories()->attach(
+                $categories->random(rand(1, 2))->pluck('id')->toArray()
+            );
         });
     }
 }
-

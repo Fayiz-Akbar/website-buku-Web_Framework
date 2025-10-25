@@ -18,17 +18,18 @@ class BookFactory extends Factory
      */
     public function definition(): array
     {
+        $faker = \Faker\Factory::create('id_ID');
         return [
             // publisher_id akan kita atur di Seeder
             // 'publisher_id' => Publisher::factory(), // Atau buat publisher baru di sini
-            'title' => fake()->sentence(3),
-            'isbn' => fake()->optional()->isbn13(),
-            'description' => fake()->paragraph(),
+            'title' => $faker->sentence(rand(3, 7)),       // Judul Bahasa Indonesia
+            'description' => $faker->paragraphs(3, true), // Deskripsi Bahasa Indonesia
+            'isbn' => fake()->isbn13(),
             'page_count' => fake()->numberBetween(50, 1000),
             'published_year' => fake()->numberBetween(1900, now()->year),
-            // Tambahkan price dan stock
-            'price' => fake()->randomFloat(2, 10000, 500000), // Harga antara 10rb - 500rb
-            'stock' => fake()->numberBetween(0, 100), // Stok antara 0 - 100
+            // Kolom lain sudah benar
+            'price' => $faker->numberBetween(50000, 200000),
+            'stock' => $faker->numberBetween(10, 100),
             'cover_image_url' => fake()->optional()->imageUrl(400, 600, 'books'), // URL gambar dummy
         ];
     }
