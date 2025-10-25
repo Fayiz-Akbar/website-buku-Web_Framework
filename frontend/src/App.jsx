@@ -12,6 +12,7 @@ import GuestRoute from './components/Layout/GuestRoute';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/Shared/LoginPage';
 import NotFoundPage from './pages/Shared/NotFoundPage';
+import RegisterPage from './pages/Register/RegisterPage';
 
 // --- HALAMAN ADMIN ---
 import DashboardPage from './pages/DashboardPage';
@@ -53,6 +54,13 @@ function App() {
         path="/login" 
         element={<GuestRoute element={LoginPage} />}
       />
+
+      {/* 2. Tambahkan route ini */}
+    <Route path="/register" element={<RegisterPage />} /> 
+
+    <Route path="/" element={<AdminLayout />}>
+        {/* ... route lainnya ... */}
+    </Route>
 
       {/* Rute Admin */}
       <Route path="/admin/dashboard" element={<AdminRoute element={DashboardPage} />} />

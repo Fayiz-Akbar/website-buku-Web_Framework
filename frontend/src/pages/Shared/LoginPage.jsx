@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { useAuth } from '../../Context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+
+// 1. Tambahkan 'Link' di sini
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -58,6 +60,16 @@ export default function LoginPage() {
                 <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded">
                     Login
                 </button>
+                
+                {/* 2. INI KODE YANG DITAMBAHKAN */}
+                <p className="mt-4 text-center text-sm">
+                  Belum punya akun?{' '}
+                  <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
+                    Daftar di sini
+                  </Link>
+                </p>
+                {/* BATAS KODE TAMBAHAN */}
+
             </form>
         </div>
     );
