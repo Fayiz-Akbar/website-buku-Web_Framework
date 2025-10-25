@@ -39,6 +39,7 @@ return new class extends Migration
             $table->foreignId('cart_id')->constrained('carts')->onDelete('cascade');
             $table->foreignId('book_id')->constrained('books')->onDelete('cascade');
             $table->integer('quantity')->unsigned()->default(1);
+            $table->decimal('price', 15, 2); // Harga per item SAAT ditambahkan ke keranjang
             $table->timestamps();
             $table->unique(['cart_id', 'book_id']);
         });
