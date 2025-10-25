@@ -1,7 +1,9 @@
 <?php
+// File: Backend/database/factories/BookFactory.php
 
 namespace Database\Factories;
 
+use App\Models\Publisher; // <-- Import Publisher
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -10,32 +12,24 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class BookFactory extends Factory
 {
     /**
-     * Mendefinisikan status default dari model.
+     * Define the model's default state.
      *
      * @return array<string, mixed>
      */
     public function definition(): array
     {
         return [
-            // Kolom 'user_id' akan kita tentukan saat memanggil factory nanti.
-            
-            // faker->sentence(3) akan membuat judul acak dari 3 kata.
-            'title' => $this->faker->sentence(3),
-            
-            // faker->name() akan menghasilkan nama orang acak.
-            'author' => $this->faker->name(),
-            
-            // faker->company() akan menghasilkan nama perusahaan acak.
-            'publisher' => $this->faker->company(),
-            
-            // faker->year() akan menghasilkan tahun acak.
-            'year_published' => $this->faker->year(),
-            
-            // faker->paragraph(2) akan membuat deskripsi acak dari 2 paragraf.
-            'description' => $this->faker->paragraph(2),
-            
-            // faker->imageUrl(...) akan menghasilkan link URL ke sebuah gambar acak.
-            'cover_image_url' => $this->faker->imageUrl(480, 640, 'book', true),
+            // publisher_id akan kita atur di Seeder
+            // 'publisher_id' => Publisher::factory(), // Atau buat publisher baru di sini
+            'title' => fake()->sentence(3),
+            'isbn' => fake()->optional()->isbn13(),
+            'description' => fake()->paragraph(),
+            'page_count' => fake()->numberBetween(50, 1000),
+            'published_year' => fake()->numberBetween(1900, now()->year),
+            // Tambahkan price dan stock
+            'price' => fake()->randomFloat(2, 10000, 500000), // Harga antara 10rb - 500rb
+            'stock' => fake()->numberBetween(0, 100), // Stok antara 0 - 100
+            'cover_image_url' => fake()->optional()->imageUrl(400, 600, 'books'), // URL gambar dummy
         ];
     }
 }

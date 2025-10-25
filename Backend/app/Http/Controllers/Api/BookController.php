@@ -4,12 +4,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\BookResource; // <-- 1. Import Resource kita
-use App\Models\Book; // <-- Import Model
+// ===== PERBAIKI IMPOR RESOURCE DI SINI =====
+use App\Http\Resources\BookResource;
+use App\Http\Resources\AuthorResource; // Jika diperlukan nanti
+use App\Http\Resources\CategoryResource; // Jika diperlukan nanti
+use App\Http\Resources\PublisherResource; // Jika diperlukan nanti
+// ===========================================
+use App\Models\Book;
 use Illuminate\Http\Request;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection; // Untuk koleksi
-use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Response;
+
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB; // <-- Tambahkan ini untuk transaksi di store/update
+use Symfony\Component\HttpFoundation\Response; // <-- Tambahkan ini untuk destroy
 
 class BookController extends Controller
 {

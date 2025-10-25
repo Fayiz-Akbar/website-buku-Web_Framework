@@ -1,14 +1,15 @@
 <?php
+// File: Backend/app/Http/Controllers/Api/AuthController.php
 
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\User; // Pastikan namespace model User benar
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Auth; // <-- Tambahkan ini untuk logout
+use Illuminate\Support\Facades\Validator; // Import Validator
+use Illuminate\Validation\Rules\Password; // Import Password rule
 
 class AuthController extends Controller
 {
@@ -17,26 +18,35 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
+        // 1. Validasi Input (Gunakan 'full_name')
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed', // Pastikan ada field 'password_confirmation'
+            'full_name' => ['required', 'string', 'max:255'], // <-- Ubah 'name' menjadi 'full_name'
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'password' => ['required', 'confirmed', Password::defaults()], // Gunakan aturan password default Laravel
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return response()->json($validator->errors(), 422); // Error validasi
         }
 
+        // 2. Buat User Baru (Gunakan 'full_name')
         $user = User::create([
-            'name' => $request->name,
+            'full_name' => $request->full_name, // <-- Ubah 'name' menjadi 'full_name'
             'email' => $request->email,
-            'password' => Hash::make($request->password), // Password di-hash
+            'password' => Hash::make($request->password),
+            // Role default 'user' sudah diatur di migrasi/model
         ]);
 
+        // 3. Buat Token Sanctum
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        // 4. Kembalikan Response
         return response()->json([
-            'message' => 'User registered successfully',
-            'user' => $user
-        ], 201);
+            'message' => 'Registrasi berhasil.',
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'user' => $user // Kirim data user juga (tanpa password)
+        ], 201); // 201 Created
     }
 
     /**
@@ -44,64 +54,48 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
+        // 1. Validasi Input
         $validator = Validator::make($request->all(), [
-            'email' => 'required|string|email',
-            'password' => 'required|string',
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
 
-        // Cari user berdasarkan email
-        $user = User::where('email', $request->email)->first();
-
-        // Cek user ada dan password cocok
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            // Jika gagal, lempar exception
-            throw ValidationException::withMessages([
-                'email' => ['The provided credentials do not match our records.'],
-            ]);
+        // 2. Coba Autentikasi
+        if (!Auth::attempt($request->only('email', 'password'))) {
+            return response()->json(['message' => 'Email atau password salah.'], 401); // 401 Unauthorized
         }
 
-        // Jika berhasil, buat token Sanctum
+        // 3. Dapatkan User yang Terautentikasi
+        $user = User::where('email', $request['email'])->firstOrFail();
+
+        // 4. Buat Token Sanctum Baru
+        // Sebaiknya hapus token lama jika ada untuk keamanan
+        $user->tokens()->delete(); // Hapus token lama
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        // --- PERUBAHAN DIMULAI DI SINI ---
-
+        // 5. Kembalikan Response
         return response()->json([
-            // 'message' => 'Login successful', // Opsional, frontend tidak memerlukannya
-            
-            // 1. Ganti 'access_token' menjadi 'token'
-            'token' => $token, 
-            
-            // 'token_type' => 'Bearer', // Opsional, frontend tidak memerlukannya
-            
-            // 2. Filter data user
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role, // Pastikan kolom 'role' ada di tabel users
-            ]
+            'message' => 'Login berhasil.',
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'user' => $user // Kirim data user juga
         ]);
         
         // --- PERUBAHAN SELESAI ---
     }
 
     /**
-     * Logout pengguna (menghapus token saat ini).
+     * Handle user logout.
      */
     public function logout(Request $request)
     {
-        // Dapatkan user yang sedang login via token
-        // Perlu middleware auth:sanctum di route agar $request->user() bekerja
-        $user = $request->user();
+        // Hapus token saat ini yang digunakan untuk request
+        $request->user()->currentAccessToken()->delete();
 
-        // Hapus token yang sedang digunakan untuk request ini
-        $user->currentAccessToken()->delete();
-
-        return response()->json(['message' => 'Logged out successfully']);
+        return response()->json(['message' => 'Logout berhasil.']);
     }
 }
-
