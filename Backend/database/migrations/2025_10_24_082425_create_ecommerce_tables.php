@@ -51,6 +51,8 @@ return new class extends Migration
             $table->string('order_code')->unique();
             $table->string('status')->default('menunggu_pembayaran'); // Kita 'hardcode' status di Laravel
             $table->decimal('total_items_price', 12, 2);
+            $table->decimal('discount_amount', 15, 2)->default(0);
+             $table->decimal('final_amount', 15, 2);
             $table->decimal('shipping_cost', 12, 2)->default(0.00);
             $table->decimal('total_amount', 12, 2);
             $table->timestamps();

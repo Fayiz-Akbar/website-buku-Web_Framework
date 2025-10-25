@@ -10,6 +10,7 @@ use App\Events\OrderProcessed; // <-- Import Event kita
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB; // <-- Import DB untuk Transaction
 use Illuminate\Support\Facades\Storage; // <-- Import Storage untuk file
+use Illuminate\Support\Str;
 
 class CheckoutService
 {
@@ -41,12 +42,16 @@ class CheckoutService
             // 4. Simpan file bukti pembayaran
             // $data['payment_proof'] adalah objek UploadedFile
             $filePath = $data['payment_proof']->store('payment_proofs', 'public');
-
+            $orderCode = 'ORD-' . strtoupper(Str::random(8));
             // 5. Buat entri Order
             $order = $user->orders()->create([
-                'status' => 'pending', 
-                'total_amount' => $totalPrice,
-                'user_address_id' => $data['user_address_id'], // <-- [BENAR]
+                'user_id' => $user->id, // [PERBAIKAN] Explisit tambahkan user_id
+                'user_address_id' => $data['user_address_id'],
+                'order_code' => $orderCode,
+                'status' => 'pending',
+                'total_items_price' => $totalPrice, // <-- [PERBAIKAN] Nama kolom yang benar
+                'discount_amount' => 0, // <-- [PERBAIKAN] Default value
+                'final_amount' => $totalPrice, // <-- [PERBAIKAN] Asumsikan final = total (belum ada diskon/ongkir)
             ]);
 
             // 6. Buat entri Payment
