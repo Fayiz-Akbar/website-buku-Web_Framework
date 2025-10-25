@@ -26,17 +26,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // Menangani Unauthenticated untuk API
         // ========================================================
         $exceptions->render(function (AuthenticationException $e, Request $request) {
-            // Periksa apakah request adalah untuk API
-            // (biasanya route dimulai 'api/' atau request mengharapkan JSON)
-            if ($request->expectsJson() || $request->is('api/*')) {
-                // Kembalikan response JSON 401
-                return response()->json(
-                    ['message' => 'Unauthenticated.'], // Pesan standar Laravel
-                    401
-                );
-            }
-            // Jika bukan request API, biarkan handler default (redirect ke login web)
-            // return redirect()->guest($e->redirectTo() ?? route('login')); // Baris ini mungkin ada secara default
+            // Hapus kondisi 'if', langsung kembalikan JSON 401
+            return response()->json(
+                ['message' => 'Unauthenticated.'],
+                401
+            );
         });
         // ========================================================
 
