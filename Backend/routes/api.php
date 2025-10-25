@@ -32,6 +32,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/books', [BookController::class, 'index']); // Daftar buku (paginasi)
 Route::get('/books/{id}', [BookController::class, 'show']); // Detail buku
 
+Route::get('/categories', [CategoryController::class, 'index']);
 
 /*
 |--------------------------------------------------------------------------
