@@ -3,32 +3,33 @@
 
 namespace App\Models;
 
-// Gunakan ini untuk menggantikan App\Models\User yang lama
+// [PERUBAHAN 1] Impor contract MustVerifyEmail
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes; // <-- 1. Tambahkan SoftDeletes
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens; // <-- 2. Tambahkan HasApiTokens untuk API
+use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+// [PERUBAHAN 2] Tambahkan 'implements MustVerifyEmail'
+class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Notifiable, SoftDeletes, HasApiTokens; // <-- 3. Gunakan traits
+    use HasFactory, Notifiable, SoftDeletes, HasApiTokens;
 
     /**
      * Kolom yang boleh diisi secara massal.
-     * Kita tambahkan 'full_name' dan 'role' (meskipun 'role' harus hati-hati).
      */
     protected $fillable = [
-        'full_name', // <-- 4. Ganti 'name' menjadi 'full_name'
+        'full_name', // Sesuai file-mu
         'email',
         'password',
-        'role', // <-- 5. Tambahkan 'role'
-        'profile_image_url', // <-- 6. Tambahkan 'profile_image_url'
+        'role',
+        'profile_image_url',
     ];
 
     /**
-     * Kolom yang harus disembunyikan saat di-serialize (cth: jadi JSON).
+     * Kolom yang harus disembunyikan.
      */
     protected $hidden = [
         'password',
@@ -36,36 +37,27 @@ class User extends Authenticatable
     ];
 
     /**
-     * Kolom yang harus di-cast ke tipe data tertentu.
+     * Kolom yang harus di-cast.
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'password' => 'hashed', // <-- 7. Pastikan password otomatis di-hash
+        'password' => 'hashed',
     ];
 
     // =================================================================
-    // RELASI ELOQUENT
+    // RELASI ELOQUENT (Tidak berubah, sudah benar)
     // =================================================================
 
-    /**
-     * Relasi 1-N: Satu User memiliki banyak Alamat
-     */
     public function addresses(): HasMany
     {
         return $this->hasMany(UserAddress::class, 'user_id', 'id');
     }
 
-    /**
-     * Relasi 1-N: Satu User memiliki banyak Pesanan
-     */
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class, 'user_id', 'id');
     }
 
-    /**
-     * Relasi 1-1: Satu User memiliki satu Keranjang
-     */
     public function cart()
     {
         return $this->hasOne(Cart::class, 'user_id', 'id');
