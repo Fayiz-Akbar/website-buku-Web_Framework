@@ -16,14 +16,13 @@ class AuthorFactory extends Factory
      */
     public function definition(): array
     {
-        // Menggunakan lokal Indonesia untuk generator Faker
         $faker = \Faker\Factory::create('id_ID');
 
         return [
-            // Membuat nama orang Indonesia
-            'name' => $faker->name(),
-            // Membuat biografi singkat palsu
-            'bio' => $faker->paragraph(3),
+            // Menggunakan 'name' (Kolom yang diasumsikan ada di tabel authors Anda)
+            'name' => $faker->name(), 
+            'bio' => $faker->paragraph(),
+            // PENTING: Kolom 'slug' DIHAPUS untuk mencegah error SQLSTATE[42703]
         ];
     }
 }
