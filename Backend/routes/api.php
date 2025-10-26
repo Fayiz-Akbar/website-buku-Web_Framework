@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\AuthorController;
 use App\Http\Controllers\Api\PublisherController;
 use App\Http\Controllers\Api\AdminOrderController;
 use App\Http\Controllers\Api\CartController;
+use App\Http\Controllers\Api\UserAddressController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,6 +49,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Update profil user (nama, alamat, foto profil)
     Route::put('/user/profile', [AuthController::class, 'updateProfile']);
+
+    // Update password user
+    Route::post('/user/password', [AuthController::class, 'updatePassword']);
+
+    // Alamat pengguna
+    Route::get('/user/addresses', [UserAddressController::class, 'index']);
+    Route::post('/user/addresses', [UserAddressController::class, 'store']);
+    Route::put('/user/addresses/{id}', [UserAddressController::class, 'update']);
+    Route::delete('/user/addresses/{id}', [UserAddressController::class, 'destroy']);
+    Route::put('/user/addresses/{id}/primary', [UserAddressController::class, 'setPrimary']);
 
     // Alur Checkout
     Route::post('/checkout', [CheckoutController::class, 'store']);

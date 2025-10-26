@@ -81,12 +81,18 @@ export const AuthProvider = ({ children }) => {
         delete axios.defaults.headers.common['Authorization'];
     };
 
+    // Memperbarui informasi user di context setelah update profil
+    const updateUser = (updatedUser) => {
+        // Terima baik objek user lengkap dari server maupun partial
+        setUser((prev) => ({ ...prev, ...updatedUser }));
+    };
+
     if (loading) {
         return <div>Loading...</div>; 
     }
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, isLoggedIn: !!token }}>
+        <AuthContext.Provider value={{ user, token, login, logout, updateUser, isLoggedIn: !!token }}>
             {children}
         </AuthContext.Provider>
     );

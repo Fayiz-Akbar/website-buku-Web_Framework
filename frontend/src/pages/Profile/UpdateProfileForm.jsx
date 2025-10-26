@@ -4,7 +4,7 @@ import { useAuth } from '../../Context/AuthContext';
 import { User, Mail, Save, MapPin, ImagePlus } from 'lucide-react';
 
 export default function UpdateProfileForm() {
-  const { user, login } = useAuth();
+  const { user, updateUser } = useAuth();
 
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [email] = useState(user?.email || '');
@@ -58,9 +58,9 @@ export default function UpdateProfileForm() {
         }
       );
 
-      setSuccess('Profil berhasil diperbarui!');
-      // Perbarui context user
-      login(response.data.user);
+  setSuccess('Profil berhasil diperbarui!');
+  // Perbarui context user tanpa memicu proses login
+  updateUser(response.data.user);
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || 'Gagal memperbarui profil. Coba lagi.');

@@ -24,11 +24,13 @@ class UserAddress extends Model
      */
     protected $fillable = [
         'user_id',
-        'label',
+        // Disesuaikan dengan kolom pada migrasi terbaru
+        'address_label',
         'recipient_name',
-        'recipient_phone',
-        'full_address',
+        'phone_number',
+        'address_line',
         'city',
+        'province',
         'postal_code',
         'is_primary',
     ];
