@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Link, Outlet, useNavigate } from 'react-router-dom'; // Tambahkan useNavigate
-// --- Tambahkan Heart dan LogOut ---
+import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Search, Menu, X, User, MapPin, Phone, Mail, ChevronDown, Heart, LogOut } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../../Context/AuthContext'; // Path sudah benar
-// Hapus import useCart jika tidak digunakan di sini (sudah dihapus sesuai instruksi)
-// import { useCart } from '../../Context/CartContext'; 
 
 export default function UserLayout() {
+    // --- TAMBAHKAN STATE INI UNTUK MENGONTROL DROPDOWN ---
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [categories, setCategories] = useState([]);
-    const { user, logout, isLoggedIn } = useAuth(); // Ambil user, logout, isLoggedIn
-    const navigate = useNavigate(); // Hook untuk navigasi
+    const { user, logout, isLoggedIn } = useAuth(); 
+    const navigate = useNavigate(); 
 
     // Ambil Kategori untuk Navigasi
     useEffect(() => {
@@ -28,14 +28,19 @@ export default function UserLayout() {
 
     const handleLogout = () => {
         logout();
-        navigate('/login'); // Arahkan ke login setelah logout
+        navigate('/login'); 
     };
+    
+    // Fungsi untuk navigasi dan menutup dropdown
+    const handleNavigate = (path) => {
+        setIsDropdownOpen(false); // Tutup dropdown
+        navigate(path); // Navigasi ke halaman tujuan
+    }
 
     return (
         <div className="min-h-screen bg-white flex flex-col">
             {/* Top Bar */}
             <div className="bg-gray-800 text-white text-xs">
-                {/* ... (kode top bar tetap sama) ... */}
                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
                     <div className="flex justify-between items-center">
                         <div className="flex items-center space-x-4">
@@ -70,7 +75,6 @@ export default function UserLayout() {
 
                         {/* Search Bar - Desktop */}
                         <div className="hidden md:flex flex-1 max-w-2xl mx-8">
-                            {/* ... (kode search bar tetap sama) ... */}
                             <div className="relative w-full">
                                 <input
                                 type="text"
@@ -87,22 +91,43 @@ export default function UserLayout() {
                         <div className="flex items-center space-x-4 sm:space-x-6">
                             {/* --- Tombol Akun/Login --- */}
                              {isLoggedIn ? (
-                                <div className="relative group hidden md:flex">
-                                    <button className="flex flex-col items-center text-gray-700 hover:text-blue-600">
+                                // --- GUNAKAN STATE isDropdownOpen dan onMouse* ---
+                                <div 
+                                    className="relative group hidden md:flex h-16 items-center" 
+                                    onMouseEnter={() => setIsDropdownOpen(true)}
+                                    onMouseLeave={() => setIsDropdownOpen(false)}
+                                > 
+                                    {/* Target utama tombol/link */}
+                                    <Link to="/profile" className="flex flex-col items-center text-gray-700 hover:text-blue-600 pt-2 pb-2"> 
                                         <User className="w-6 h-6" />
                                         <span className="text-xs mt-1">{user?.full_name?.split(' ')[0] || 'Akun'}</span>
-                                    </button>
-                                     {/* Dropdown Logout */}
-                                    <div className="absolute right-0 top-full mt-2 w-48 bg-white border rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity invisible group-hover:visible z-50">
-                                        <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profil Saya</Link>
-                                        <Link to="/orders" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Pesanan Saya</Link>
-                                        <button 
-                                            onClick={handleLogout}
-                                            className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                                        >
-                                            <LogOut className="w-4 h-4"/> Logout
-                                        </button>
-                                    </div>
+                                    </Link>
+                                     {/* Dropdown Menu - Dikendalikan oleh state isDropdownOpen */}
+                                    {isDropdownOpen && (
+                                        <div className="absolute right-0 top-full mt-0.5 w-48 bg-white border rounded-md shadow-lg z-50"> 
+                                            {/* Link Profil Saya (menggunakan handleNavigate) */}
+                                            <button 
+                                                onClick={() => handleNavigate('/profile')}
+                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:font-medium"
+                                            >
+                                                Profil Saya
+                                            </button>
+                                            {/* Link Pesanan Saya */}
+                                            <button 
+                                                onClick={() => handleNavigate('/profile/orders')}
+                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:font-medium"
+                                            >
+                                                Pesanan Saya
+                                            </button>
+                                            {/* Tombol Logout */}
+                                            <button 
+                                                onClick={handleLogout}
+                                                className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:font-medium"
+                                            >
+                                                <LogOut className="w-4 h-4"/> Logout
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <Link to="/login" className="hidden md:flex flex-col items-center text-gray-700 hover:text-blue-600">
@@ -111,19 +136,16 @@ export default function UserLayout() {
                                 </Link>
                             )}
                             
-                            {/* --- Tombol Favorit BARU --- */}
+                            {/* Tombol Favorit */}
                             <Link to="/wishlist" className="flex flex-col items-center text-gray-700 hover:text-blue-600 relative">
                                 <Heart className="w-6 h-6" />
                                 <span className="text-xs mt-1">Favorit</span>
-                                {/* Opsional: Tambahkan counter jika WishlistContext menyediakan */}
-                                {/* {wishlistCount > 0 && (...) } */}
                             </Link>
                             
-                            {/* Tombol Keranjang (tidak ada counter lagi) */}
+                            {/* Tombol Keranjang */}
                             <button className="relative flex flex-col items-center text-gray-700 hover:text-blue-600" onClick={() => alert('Fitur keranjang sedang dikerjakan oleh tim lain :)')}>
                                 <ShoppingCart className="w-6 h-6" />
                                 <span className="text-xs mt-1">Keranjang</span>
-                                {/* Angka dihapus */}
                             </button>
 
                             {/* Tombol Menu Mobile */}
@@ -138,7 +160,6 @@ export default function UserLayout() {
 
                     {/* Mobile Search */}
                     <div className="md:hidden pb-3">
-                         {/* ... (kode search bar mobile tetap sama) ... */}
                         <div className="relative">
                             <input
                             type="text"
@@ -159,7 +180,7 @@ export default function UserLayout() {
                             {isLoggedIn ? (
                                 <>
                                     <Link to="/profile" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Profil Saya</Link>
-                                    <Link to="/orders" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Pesanan Saya</Link>
+                                    <Link to="/profile/orders" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Pesanan Saya</Link>
                                      <button 
                                         onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
                                         className="w-full text-left block px-3 py-2 rounded-md text-base font-medium text-red-600 hover:text-red-800 hover:bg-red-50"
@@ -170,7 +191,6 @@ export default function UserLayout() {
                             ) : (
                                 <Link to="/login" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Login / Daftar</Link>
                             )}
-                            {/* Tambahkan link lain jika perlu */}
                         </div>
                     </div>
                 )}
@@ -178,13 +198,12 @@ export default function UserLayout() {
 
             {/* Navigation Categories */}
             <nav className="bg-gray-100 border-b">
-                 {/* ... (kode navigasi kategori tetap sama) ... */}
                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="hidden md:flex items-center justify-center space-x-6 py-3 text-sm overflow-x-auto">
                         {categories.map((category) => (
-                        <Link // Gunakan Link
+                        <Link 
                             key={category.id}
-                            to={`/category/${category.id}`} // Arahkan ke halaman kategori
+                            to={`/category/${category.id}`} 
                             className="text-gray-700 hover:text-blue-600 font-medium whitespace-nowrap px-2 py-1"
                         >
                             {category.name}
@@ -197,7 +216,6 @@ export default function UserLayout() {
                             <span className="font-medium">Semua Kategori</span>
                             <ChevronDown className="w-4 h-4" />
                         </button>
-                         {/* TODO: Implement dropdown logic for mobile categories */}
                     </div>
                 </div>
             </nav>
@@ -209,7 +227,6 @@ export default function UserLayout() {
 
             {/* Footer */}
             <footer className="bg-gray-800 text-gray-300 mt-12">
-                 {/* ... (kode footer tetap sama) ... */}
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-sm">
                         {/* Kolom Footer */}
@@ -243,13 +260,11 @@ export default function UserLayout() {
                          <div>
                             <h4 className="font-bold text-white mb-4 text-base">IKUTI KAMI</h4>
                             <div className="flex space-x-3 mb-4">
-                                {/* TODO: Replace with actual icons */}
                                 <a href="#" className="w-8 h-8 bg-gray-700 hover:bg-blue-600 flex items-center justify-center text-white rounded">f</a>
                                 <a href="#" className="w-8 h-8 bg-gray-700 hover:bg-blue-600 flex items-center justify-center text-white rounded">X</a>
                                 <a href="#" className="w-8 h-8 bg-gray-700 hover:bg-blue-600 flex items-center justify-center text-white rounded">IG</a>
                             </div>
                             <h5 className="font-semibold text-white mb-2">METODE PEMBAYARAN</h5>
-                            {/* TODO: Replace with actual payment logos */}
                              <div className="flex flex-wrap gap-2">
                                 <span className="bg-white px-2 py-1 text-xs text-gray-800 font-semibold rounded">VISA</span>
                                 <span className="bg-white px-2 py-1 text-xs text-gray-800 font-semibold rounded">BCA</span>
@@ -265,4 +280,3 @@ export default function UserLayout() {
         </div>
     );
 }
-
