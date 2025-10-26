@@ -1,4 +1,3 @@
-// File: frontend/src/components/Layout/GuestRoute.jsx
 
 import React from 'react';
 // [PERBAIKAN] Import Outlet
@@ -13,6 +12,9 @@ import { useAuth } from '../../Context/AuthContext';
 // [PERBAIKAN] Hapus prop 'element'
 const GuestRoute = () => { 
   const { user, isLoggedIn } = useAuth();
+
+  // Tambahkan log untuk debug (opsional)
+  // console.log("GuestRoute Layout Check:", { isLoggedIn, userRole: user?.role });
 
   if (isLoggedIn) {
     // Jika sudah login, cek rolenya

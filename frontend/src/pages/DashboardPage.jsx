@@ -3,6 +3,7 @@
 import React from 'react';
 
 const DashboardPage = () => {
+  console.log("DashboardPage component is rendering!");
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6 text-gray-800">Selamat Datang di Dashboard Admin</h1>
