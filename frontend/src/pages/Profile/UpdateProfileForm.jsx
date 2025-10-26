@@ -1,6 +1,6 @@
 import { useState } from "react";
 import api from "../../api/axios";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../Context/AuthContext";
 
 export default function UpdateProfileForm() {
   const { user, setUser } = useAuth();

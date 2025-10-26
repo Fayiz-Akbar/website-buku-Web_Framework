@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiAuth } from '../api/axios'; 
-import { useAuth } from './AuthContext'; 
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
 

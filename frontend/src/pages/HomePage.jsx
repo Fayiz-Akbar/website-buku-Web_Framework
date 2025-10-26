@@ -13,7 +13,7 @@ import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 
 // [PERBAIKAN 2] Import Contexts untuk Cart dan Auth
 import { useCart } from '../Context/CartContext'; 
-import { useAuth } from './../context/AuthContext';
+import { useAuth } from './../Context/AuthContext';
 
 // Import Swiper styles (sudah ada)
 import 'swiper/css';
