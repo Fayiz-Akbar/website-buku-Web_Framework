@@ -1,18 +1,22 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import App from './App.jsx';
+import App from './App'; 
 import './index.css';
 
-// Import AuthProvider
-import { AuthProvider } from './Context/AuthContext.jsx'; 
+import { AuthProvider } from './Context/AuthContext';
+// --- IMPORT BARU ---
+import { WishlistProvider } from './Context/WishlistContext'; 
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter> 
-      {/* Bungkus App dengan AuthProvider agar seluruh aplikasi dapat mengakses state login */}
       <AuthProvider> 
-        <App />
+        {/* --- Bungkus dengan WishlistProvider --- */}
+        <WishlistProvider> 
+            <App />
+        </WishlistProvider>
+        {/* --- Batas --- */}
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

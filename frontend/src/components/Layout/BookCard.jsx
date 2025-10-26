@@ -1,6 +1,10 @@
-import React from 'react';
+// Path: frontend/src/components/Layout/BookCard.jsx
+// (Pastikan path file ini benar sesuai lokasi Anda)
+
+import React from 'react'; 
 import { Link } from 'react-router-dom';
-import { Star } from 'lucide-react';
+import { Star, Heart } from 'lucide-react'; 
+import { useWishlist } from '../../Context/WishlistContext'; // <-- IMPORT BARU (sesuaikan path)
 
 // Helper format Rupiah
 const formatRupiah = (number) => {
@@ -11,17 +15,25 @@ const formatRupiah = (number) => {
     }).format(number);
 };
 
-// --- Komponen Kartu Buku (Versi Profesional "Bersih") ---
-// Tidak ada tombol 'Add to Cart' atau 'Favorite'
 export default function BookCard({ book }) {
+    // --- GUNAKAN CONTEXT ---
+    const { toggleWishlist, isInWishlist } = useWishlist(); 
+    const isFavorite = isInWishlist(book.id); // Cek status favorit dari context
+    // ----------------------
 
     const authorName = book.authors && book.authors.length > 0
         ? book.authors[0].full_name
         : 'Penulis';
     
-    // Hitung diskon (jika ada)
     const discount = book.original_price ? Math.round(((book.original_price - book.price) / book.original_price) * 100) : 0;
     
+    // --- FUNGSI FAVORIT ---
+    const handleToggleFavorite = (e) => {
+        e.preventDefault(); // Mencegah navigasi ke detail buku
+        toggleWishlist(book); // Panggil fungsi dari context, kirim object book
+    };
+    // --------------------
+
     return (
         <Link to={`/books/${book.id}`} className="bg-white border rounded-lg overflow-hidden hover:shadow-lg transition-shadow group h-full flex flex-col">
             <div className="relative overflow-hidden bg-gray-50">
@@ -35,6 +47,13 @@ export default function BookCard({ book }) {
                         {discount}%
                     </div>
                 )}
+                 {/* Tombol Wishlist (Hati) Terhubung */}
+                 <button
+                    onClick={handleToggleFavorite} // Panggil fungsi handle
+                    className="absolute top-2 right-2 p-1.5 bg-white rounded-full shadow hover:bg-red-50 z-10" // Tambah z-10
+                >
+                    <Heart className={`w-5 h-5 ${isFavorite ? 'text-red-500 fill-current' : 'text-gray-500'}`} />
+                </button>
             </div>
             
             <div className="p-3 flex flex-col flex-grow">
@@ -43,7 +62,6 @@ export default function BookCard({ book }) {
                 </h3>
                 <p className="text-gray-600 text-xs mb-2 truncate">{authorName}</p>
                 
-                {/* Rating (Static) */}
                 <div className="flex items-center mb-2 text-xs">
                     <div className="flex items-center text-yellow-500">
                         <Star className="w-3 h-3 fill-current" />
@@ -52,7 +70,6 @@ export default function BookCard({ book }) {
                     <span className="text-gray-400 ml-1">(120)</span>
                 </div>
                 
-                {/* Spacer untuk mendorong harga ke bawah */}
                 <div className="flex-grow"></div>
 
                 <div className="mt-2">
@@ -66,7 +83,6 @@ export default function BookCard({ book }) {
                     </div>
                 </div>
                 
-                {/* Tombol diganti menjadi Lihat Detail */}
                 <div className="w-full text-center mt-3 px-3 py-2 bg-blue-50 border-blue-600 border text-blue-700 text-sm font-medium rounded-md hover:bg-blue-100 transition-colors">
                     Lihat Detail
                 </div>
@@ -74,4 +90,3 @@ export default function BookCard({ book }) {
         </Link>
     );
 }
-
