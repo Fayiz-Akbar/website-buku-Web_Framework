@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,16 +16,17 @@ class CategoryFactory extends Factory
      */
     public function definition(): array
     {
-        // [PERBAIKAN] Kita hanya siapkan default factory
-        // Seeder kita akan menimpa (override) nilai 'name' ini
         $faker = \Faker\Factory::create('id_ID');
         
-        // Buat nama acak 2 kata sebagai default
-        $name = $faker->words(2, true);
+        // Daftar kategori realistis untuk FAKER
+        $categories = [
+            'Fiksi', 'Non-Fiksi', 'Bisnis', 'Teknologi',
+            'Pengembangan Diri', 'Sejarah', 'Sains', 'Novel'
+        ];
 
         return [
-            'name' => $name,
-            'slug' => Str::slug($name, '-'),
+            'name' => $this->faker->unique()->randomElement($categories),
+            // PENTING: Kolom 'slug' DIHAPUS karena melanggar NOT NULL di migrasi Anda
         ];
     }
 }
