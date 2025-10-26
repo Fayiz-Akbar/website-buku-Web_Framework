@@ -40,7 +40,7 @@ export default function ProfilePage() {
         <div className="bg-gray-50 py-10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <h1 className="text-4xl font-extrabold text-gray-900 mb-8 border-b pb-4">
-                    ⚙️ Pengaturan Akun
+                    Pengaturan Akun
                 </h1>
                 
                 <div className="flex flex-col lg:flex-row gap-8">

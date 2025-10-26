@@ -4,7 +4,6 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-
 /*
 |--------------------------------------------------------------------------
 | Import Semua Controller (Kita standarkan semua di 'Api' Namespace)
@@ -29,9 +28,8 @@ Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
 // Read-Only Buku
-Route::get('/books', [BookController::class, 'index']); // Daftar buku (paginasi)
+Route::get('/books', [BookController::class, 'index']); // Daftar buku
 Route::get('/books/{id}', [BookController::class, 'show']); // Detail buku
-
 Route::get('/categories', [CategoryController::class, 'index']);
 
 /*
@@ -40,26 +38,27 @@ Route::get('/categories', [CategoryController::class, 'index']);
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
-    
-    Route::post('/logout', [AuthController::class, 'logout']);
-    
-    // Alur Checkout
-    Route::post('/checkout', [CheckoutController::class, 'store']);
 
-    // (Rute lain untuk user: cart, my-orders, my-profile, dll.)
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Ambil data user saat ini
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
 
-    Route::get('/cart', [CartController::class, 'index']);
-    Route::post('/cart/add', [CartController::class, 'addBook']); // <-- Ini perbaikan dari respon #33
-    Route::put('/cart/{cartItemId}', [CartController::class, 'updateQuantity']);
-    Route::delete('/cart/{cartItemId}', [CartController::class, 'removeBook']);
+    // Update profil user (nama, alamat, foto profil)
+    Route::put('/user/profile', [AuthController::class, 'updateProfile']);
 
+    // Alur Checkout
+    Route::post('/checkout', [CheckoutController::class, 'store']);
     Route::post('/checkout', [CheckoutController::class, 'processCheckout']);
 
+    // Cart
+    Route::get('/cart', [CartController::class, 'index']);
+    Route::post('/cart/add', [CartController::class, 'addBook']);
+    Route::put('/cart/{cartItemId}', [CartController::class, 'updateQuantity']);
+    Route::delete('/cart/{cartItemId}', [CartController::class, 'removeBook']);
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -67,39 +66,34 @@ Route::middleware('auth:sanctum')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:sanctum', 'admin'])
-    ->prefix('admin') // URL prefix /api/admin/...
+    ->prefix('admin')
     ->group(function () {
 
-    // (Langkah 2) CRUD Kategori
-    Route::apiResource('/categories', CategoryController::class);
-    
-    // (Langkah 2) CRUD Penulis
-    Route::apiResource('/authors', AuthorController::class);
-    
-    // (Langkah 2) CRUD Penerbit
-    Route::apiResource('/publishers', PublisherController::class);
+        // CRUD Kategori
+        Route::apiResource('/categories', CategoryController::class);
 
-    // (Langkah 3) CRUD Buku
-    // Kita hanya gunakan 'store', 'update', 'destroy'
-    // karena 'index' dan 'show' sudah ada di rute publik.
-    Route::apiResource('/books', BookController::class)->only([
-        'store', 'update', 'destroy'
-    ]);
-    
-    // (Langkah 4) Manajemen Pesanan
-    Route::get('/orders', [AdminOrderController::class, 'index']);
-    Route::get('/orders/{order}', [AdminOrderController::class, 'show']);
-    Route::post('/orders/{order}/approve', [AdminOrderController::class, 'approve']);
-    Route::post('/orders/{order}/reject', [AdminOrderController::class, 'reject']);
+        // CRUD Penulis
+        Route::apiResource('/authors', AuthorController::class);
 
-    
-    // Rute Tes Keamanan (dari file Anda)
-    Route::get('/test', function (Request $request) {
-        return response()->json([
-            'message' => 'Selamat datang, Admin!',
-            'user' => $request->user(),
+        // CRUD Penerbit
+        Route::apiResource('/publishers', PublisherController::class);
+
+        // CRUD Buku (store, update, destroy)
+        Route::apiResource('/books', BookController::class)->only([
+            'store', 'update', 'destroy'
         ]);
+
+        // Manajemen Pesanan
+        Route::get('/orders', [AdminOrderController::class, 'index']);
+        Route::get('/orders/{order}', [AdminOrderController::class, 'show']);
+        Route::post('/orders/{order}/approve', [AdminOrderController::class, 'approve']);
+        Route::post('/orders/{order}/reject', [AdminOrderController::class, 'reject']);
+
+        // Tes Admin
+        Route::get('/test', function (Request $request) {
+            return response()->json([
+                'message' => 'Selamat datang, Admin!',
+                'user' => $request->user(),
+            ]);
+        });
     });
-
-
-});

@@ -51,13 +51,15 @@ function App() {
         
         {/* --- RUTE PROFIL (Dilindungi AuthGuard) --- */}
         {/* Semua rute profil akan merender ProfilePage.jsx, dan ProfilePage.jsx yang akan menentukan sub-komponen mana yang tampil (Data Diri, Password, Alamat, dll.) berdasarkan URL. */}
+        {/* --- RUTE PROFIL (Dilindungi AuthGuard) --- */}
         <Route element={<AuthGuard />}>
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/profile/password" element={<ProfilePage />} />
-            <Route path="/profile/addresses" element={<ProfilePage />} />
-            <Route path="/profile/orders" element={<ProfilePage />} />
-            <Route path="/profile/wishlist" element={<ProfilePage />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="profile/password" element={<ProfilePage />} />
+          <Route path="profile/addresses" element={<ProfilePage />} />
+          <Route path="profile/orders" element={<ProfilePage />} />
+          <Route path="profile/wishlist" element={<ProfilePage />} />
         </Route>
+
 
       </Route>
 
