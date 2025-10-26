@@ -1,17 +1,18 @@
 <?php
+// File: Backend/database/seeders/DatabaseSeeder.php
 
 namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\Author;
-use App\Models\Book;
-use App\Models\Category;
 use App\Models\Publisher;
+use App\Models\Category;
+use App\Models\Book;
 use App\Models\UserAddress;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str; // [PERBAIKAN] Import Str untuk slug
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\File;
 
 class DatabaseSeeder extends Seeder
 {
@@ -20,67 +21,115 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Buat User Admin
-        User::factory()->create([
+        // 1️⃣ Buat User Admin & User Biasa
+        $userAdmin = User::factory()->create([
             'full_name' => 'Admin User',
             'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
             'role' => 'admin',
+            'password' => Hash::make('password')
         ]);
 
-        // 2. Buat User Biasa
-        // [PERBAIKAN 2] Simpan user ke dalam variabel
-        $testUser = User::factory()->create([
+        $userBiasa = User::factory()->create([
             'full_name' => 'Test User',
-            'email' => 'user@example.com',
-            'password' => Hash::make('password'),
+            'email' => 'test@example.com',
             'role' => 'user',
+            'password' => Hash::make('password')
         ]);
 
-        // [PERBAIKAN 3] Buat 1 alamat utama untuk $testUser
-        UserAddress::factory()->create([
-            'user_id' => $testUser->id,
-            'is_primary' => true,
+        UserAddress::factory(3)->create([
+            'user_id' => $userBiasa->id,
+            'is_primary' => fake()->boolean(40)
         ]);
-        
-        // Daftar nama kategori yang kita inginkan
-        $categoryNames = [
-            'Novel', 'Komik', 'Biografi', 'Pengembangan Diri', 'Sains',
-            'Teknologi', 'Sejarah', 'Agama', 'Pendidikan', 'Anak-Anak',
-            'Fiksi Ilmiah', 'Horor', 'Misteri', 'Romansa', 'Bisnis'
-        ];
 
-        // Ubah array nama menjadi array sequence untuk factory
-        // ['Novel'] -> ['name' => 'Novel', 'slug' => 'novel']
-        $categorySequence = collect($categoryNames)->map(fn ($name) => [
-            'name' => $name,
-            'slug' => Str::slug($name, '-')
-        ])->all();
+        // 2️⃣ Baca Data dari JSON
+        $jsonPath = database_path('data/books_data.json');
+        if (!File::exists($jsonPath)) {
+            echo "❌ ERROR: File JSON data buku tidak ditemukan di: " . $jsonPath . "\n";
+            return;
+        }
 
-        // Panggil factory 15 kali, dan gunakan sequence yang sudah kita buat
-        // Ini akan memakai data dari $categorySequence satu per satu, urut
-        $categories = Category::factory()->count(15)->sequence(...$categorySequence)->create();
+        $bookData = json_decode(File::get($jsonPath), true);
 
+        $publishersMap = collect();
+        $authorsMap = collect();
+        $categoriesMap = collect();
 
-        // 4. Buat Penulis (Misal kita buat 50 penulis)
-        $authors = Author::factory(50)->create();
+        // 3️⃣ Buat Publisher, Author, Category dari JSON
+        foreach ($bookData as $data) {
+            // Publisher
+            $publisherName = $data['publisher'];
+            if (!$publishersMap->has($publisherName)) {
+                $publisher = Publisher::firstOrCreate(
+                    ['name' => $publisherName]
+                );
+                $publishersMap->put($publisherName, $publisher);
+            }
 
-        // 5. Buat Penerbit (Misal kita buat 20 penerbit)
-        $publishers = Publisher::factory(20)->create();
+            // Author
+            $authorName = $data['author'];
+            if (!$authorsMap->has($authorName)) {
+                $author = Author::firstOrCreate(
+                    ['name' => $authorName],
+                    ['bio' => fake()->paragraph()]
+                );
+                $authorsMap->put($authorName, $author);
+            }
 
-        // 6. Buat 200 Buku (Kode ini sudah benar)
-        Book::factory(200)->create()->each(function ($book) use ($authors, $categories, $publishers) {
+            // Category (✨ fix slug not null)
+            foreach ($data['category'] as $categoryName) {
+                if (!$categoriesMap->has($categoryName)) {
+                    $category = Category::firstOrCreate(
+                        ['name' => $categoryName],
+                        ['slug' => Str::slug($categoryName)] // auto generate slug
+                    );
+                    $categoriesMap->put($categoryName, $category);
+                }
+            }
+        }
+
+        // 4️⃣ Buat Data Tambahan Dummy
+        $authors = Author::factory(30)->create();
+        $publishers = Publisher::factory(10)->create();
+
+        // 5️⃣ Buat Buku dari JSON (TANPA DUPLICATE ISBN)
+        $categories = $categoriesMap->values();
+        $authorsFromFactory = $authorsMap->values();
+
+        foreach ($bookData as $data) {
+            // Cek apakah buku dengan ISBN ini sudah ada
+            $existingBook = Book::where('isbn', $data['isbn'])->first();
             
-            $book->publisher_id = $publishers->random()->id;
-            $book->save(); 
+            if (!$existingBook) {
+                $book = Book::create([
+                    'title' => $data['title'],
+                    'description' => $data['description'],
+                    'isbn' => $data['isbn'],
+                    'page_count' => fake()->numberBetween(200, 500),
+                    'published_year' => $data['publication_year'],
+                    'price' => $data['price'],
+                    'stock' => $data['stock'],
+                    'cover_image_url' => $data['image'],
+                    'publisher_id' => $publishersMap->get($data['publisher'])->id,
+                ]);
 
-            $book->authors()->attach(
-                $authors->random(rand(1, 3))->pluck('id')->toArray()
-            );
+                // Hubungkan Author (dari JSON)
+                $author = $authorsMap->get($data['author']);
+                $book->authors()->attach($author->id);
 
-            $book->categories()->attach(
-                $categories->random(rand(1, 2))->pluck('id')->toArray()
-            );
+                // Hubungkan Categories
+                $categoryIds = collect($data['category'])->map(function ($c) use ($categoriesMap) {
+                    return $categoriesMap->get($c)->id;
+                });
+                $book->categories()->sync($categoryIds);
+            }
+        }
+
+        // 6️⃣ Buat buku dummy tambahan (gunakan BookFactory)
+        Book::factory(20)->create()->each(function ($dummyBook) use ($categories, $authors) {
+            $dummyBook->authors()->attach($authors->random(1)->first()->id);
+            $dummyBook->categories()->attach($categories->random(1)->first()->id);
         });
+
+        echo "✅ Database seeding selesai! Total buku dari JSON: " . count($bookData) . "\n";
     }
 }
