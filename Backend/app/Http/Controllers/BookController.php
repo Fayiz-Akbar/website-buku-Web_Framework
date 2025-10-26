@@ -1,4 +1,5 @@
 <?php
+// Path: Backend/app/Http/Controllers/BookController.php
 
 namespace App\Http\Controllers;
 
@@ -11,7 +12,7 @@ use Illuminate\Support\Str;
 
 class BookController extends Controller
 {
-    // GET /api/books?limit=&per_page=&sort=&category_id=
+    // GET /api/books
     public function index(Request $request)
     {
         $limit   = (int) ($request->integer('limit') ?: 0);
@@ -37,15 +38,24 @@ class BookController extends Controller
             $q->whereHas('categories', fn($qr) => $qr->where('categories.id', $catId));
         }
 
-        // Pencarian judul/deskripsi
+        // --- (1) PERBAIKAN PENCARIAN DI SINI ---
+        // Fungsi ini sekarang mencari 'q' di title, description, dan nama author
         if ($search = trim((string) $request->query('q', ''))) {
             $driver = DB::getDriverName();
             $likeOp = $driver === 'pgsql' ? 'ilike' : 'like';
+            
             $q->where(function ($w) use ($search, $likeOp) {
+                // Cari di Judul Buku
                 $w->where('title', $likeOp, "%{$search}%")
-                  ->orWhere('description', $likeOp, "%{$search}%");
+                  // Cari di Deskripsi Buku
+                  ->orWhere('description', $likeOp, "%{$search}%")
+                  // Cari di Nama Penulis (Relasi Many-to-Many)
+                  ->orWhereHas('authors', function ($query) use ($search, $likeOp) {
+                      $query->where('name', $likeOp, "%{$search}%");
+                  });
             });
         }
+        // --- BATAS PERBAIKAN ---
 
         // Non-paginated (untuk homepage)
         if ($limit > 0 && !$request->has('page')) {
@@ -55,7 +65,7 @@ class BookController extends Controller
             ]);
         }
 
-        // Paginated
+        // Paginated (untuk halaman katalog)
         $pag = $q->paginate($perPage)->withQueryString();
 
         return response()->json([
@@ -69,12 +79,14 @@ class BookController extends Controller
         ]);
     }
 
+    // GET /api/books/{book}
     public function show(Book $book)
     {
         $book->load(['authors', 'publisher', 'categories']);
         return response()->json(['data' => $this->mapBook($book)]);
     }
 
+    // POST /api/books
     public function store(Request $request)
     {
         $request->validate([
@@ -85,22 +97,22 @@ class BookController extends Controller
             'publisher_id' => ['nullable','integer','exists:publishers,id'],
             'cover'        => ['nullable','image','mimes:jpg,jpeg,png,webp,gif','max:2048'],
             'cover_image'  => ['nullable','image','mimes:jpg,jpeg,png,webp,gif','max:2048'],
+            'cover_image_url' => ['nullable', 'string', 'url'] // Tambahkan validasi untuk URL
         ]);
 
         $book = new Book($request->only([
-            'title','price','stock','description','publisher_id',
+            'title','price','stock','description','publisher_id', 'cover_image_url'
         ]));
 
         if ($request->hasFile('cover') || $request->hasFile('cover_image')) {
             $file = $request->file('cover') ?? $request->file('cover_image');
             $path = $file->store('covers', 'public');
-            if (Schema::hasColumn('books','cover_image')) $book->cover_image = $path;
-            elseif (Schema::hasColumn('books','cover'))   $book->cover = $path;
+            // Jika ada file upload, prioritaskan itu
+            $book->cover_image_url = $path; // Simpan path file ke kolom URL
         }
 
         $book->save();
 
-        // Jika ada authors[]/categories[] dalam request, sinkronkan pivot
         if ($request->filled('authors'))    $book->authors()->sync((array) $request->input('authors'));
         if ($request->filled('categories')) $book->categories()->sync((array) $request->input('categories'));
 
@@ -108,6 +120,7 @@ class BookController extends Controller
         return response()->json(['data' => $this->mapBook($book)], 201);
     }
 
+    // PUT /api/books/{book}
     public function update(Request $request, Book $book)
     {
         $request->validate([
@@ -118,23 +131,23 @@ class BookController extends Controller
             'publisher_id' => ['sometimes','integer','exists:publishers,id'],
             'cover'        => ['nullable','image','mimes:jpg,jpeg,png,webp,gif','max:2048'],
             'cover_image'  => ['nullable','image','mimes:jpg,jpeg,png,webp,gif','max:2048'],
+            'cover_image_url' => ['nullable', 'string', 'url']
         ]);
 
         $book->fill($request->only([
-            'title','price','stock','description','publisher_id',
+            'title','price','stock','description','publisher_id', 'cover_image_url'
         ]));
 
         if ($request->hasFile('cover') || $request->hasFile('cover_image')) {
             $file = $request->file('cover') ?? $request->file('cover_image');
             $path = $file->store('covers', 'public');
 
-            $old = $book->cover_image ?? $book->cover ?? null;
+            $old = $book->cover_image_url ?? $book->cover_image ?? $book->cover ?? null;
             if ($old && !preg_match('/^https?:\/\//i', $old)) {
                 try { Storage::disk('public')->delete($old); } catch (\Throwable $e) {}
             }
-
-            if (Schema::hasColumn('books','cover_image')) $book->cover_image = $path;
-            elseif (Schema::hasColumn('books','cover'))   $book->cover = $path;
+            
+            $book->cover_image_url = $path; // Simpan path file ke kolom URL
         }
 
         $book->save();
@@ -146,16 +159,18 @@ class BookController extends Controller
         return response()->json(['data' => $this->mapBook($book)]);
     }
 
+    // DELETE /api/books/{book}
     public function destroy(Book $book)
     {
-        $old = $book->cover_image ?? $book->cover ?? null;
-        if ($old && !preg_match('/^httpsT?:\/\//i', $old)) {
+        $old = $book->cover_image_url ?? $book->cover_image ?? $book->cover ?? null;
+        if ($old && !preg_match('/^https?:\/\//i', $old)) {
             try { Storage::disk('public')->delete($old); } catch (\Throwable $e) {}
         }
         $book->delete();
         return response()->json(['message' => 'Deleted']);
     }
 
+    // GET /api/categories/{id}/books
     public function byCategory($id, Request $request)
     {
         $perPage = (int) ($request->integer('per_page') ?: $request->integer('limit') ?: 24);
@@ -177,6 +192,7 @@ class BookController extends Controller
         ]);
     }
 
+    // Fungsi helper untuk memetakan data Buku ke JSON
     private function mapBook(Book $b): array
     {
         $coverUrl = $this->buildCoverUrl($b);
@@ -199,12 +215,13 @@ class BookController extends Controller
             'price'      => $b->price,
             'stock'      => $b->stock,
             'description'=> $b->description,
-            'cover_url'  => $coverUrl,
+            'cover_url'  => $coverUrl, // Ini yang dibaca frontend
 
             'publisher'  => $publisher,
             'authors'    => $authors,
             'categories' => $categories,
 
+            // Fallback untuk JSON lama (jika ada)
             'author'     => $authors->first() ?: null,
             'category'   => $categories->first() ?: null,
 
@@ -213,51 +230,42 @@ class BookController extends Controller
         ];
     }
 
-    // =========================================================================
-    // --- FUNGSI YANG DIPERBAIKI ADA DI BAWAH INI ---
-    // =========================================================================
+    // Fungsi helper untuk membangun URL gambar
     private function buildCoverUrl(Book $b): ?string
     {
-        // urutan kandidat kolom dari DB/seed JSON
-        $raw = $b->cover_image_url // <--- [PERBAIKAN] BACA 'cover_image_url' (DARI SEEDER)
+        // (2) PERBAIKAN DARI MASALAH GAMBAR SEBELUMNYA
+        // Prioritaskan 'cover_image_url' karena ini yang diisi oleh Seeder
+        $raw = $b->cover_image_url 
             ?? $b->cover_image
             ?? $b->cover
             ?? ($b->image_url ?? null)
-            ?? ($b->cover_url ?? null) // <-- (Nama ini sudah dipakai di 'mapBook', jadi jangan dipakai di sini)
             ?? ($b->image ?? null)
             ?? ($b->thumbnail ?? null)
             ?? null;
 
         if (!$raw || trim($raw) === '') {
-            // fallback ke gambar default
+            // fallback ke gambar default jika semua kolom kosong
             return asset('images/default-book.jpg');
         }
 
         $raw = ltrim($raw);
 
-        // absolute URL (misal: https://...)
+        // Jika sudah URL absolut (dari Seeder)
         if (preg_match('~^https?://~i', $raw)) {
             return $raw;
         }
 
-        // path yang sudah mengarah ke public/
-        $publicPrefixes = ['images/', 'img/', 'uploads/', 'covers/'];
-        foreach (array_merge($publicPrefixes, array_map(fn($p)=>'/'.$p, $publicPrefixes)) as $prefix) {
-            if (Str::startsWith($raw, $prefix)) {
-                return asset(ltrim($raw, '/'));
-            }
-        }
-
-        // path storage (public disk)
+        // Jika path adalah file upload (storage)
         if (Str::startsWith($raw, ['storage/', '/storage/'])) {
             return asset(ltrim($raw, '/'));
         }
-
+        
+        // Cek apakah file ada di public disk
         if (Storage::disk('public')->exists($raw)) {
-            return asset('storage/'.ltrim($raw, '/'));
+             return asset('storage/'.ltrim($raw, '/'));
         }
 
-        // fallback terakhir
+        // Fallback untuk path lain
         return asset(ltrim($raw, '/'));
     }
 }

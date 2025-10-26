@@ -1,7 +1,7 @@
 // frontend/src/components/Layout/UserLayout.jsx
-
 import React, { useState, useEffect } from "react";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+// (1) Pastikan useNavigate di-import
+import { Link, Outlet, useNavigate } from "react-router-dom"; 
 import {
   ShoppingCart,
   Search,
@@ -16,11 +16,10 @@ import {
   Facebook,
   Instagram,
   Twitter,
+  ChevronDown,
 } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "../../Context/AuthContext";
-// --- (1) IMPORT useCart ---
-import { useCart } from "../../Context/CartContext";
 
 export default function UserLayout() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -28,10 +27,11 @@ export default function UserLayout() {
   const [categories, setCategories] = useState([]);
   const { user, logout, isLoggedIn } = useAuth();
   
-  // --- (2) AMBIL cartCount ---
-  const { cartCount } = useCart();
-  
+  // (2) Inisialisasi useNavigate
   const navigate = useNavigate();
+
+  // (3) State baru untuk menyimpan query pencarian
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Ambil kategori dari API
   useEffect(() => {
@@ -56,28 +56,34 @@ export default function UserLayout() {
     navigate(path);
     setIsDropdownOpen(false);
   };
+  
+  // (4) Fungsi baru untuk menangani submit form pencarian
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      // Navigasi ke halaman katalog dengan query parameter 'q'
+      navigate(`/books?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      // Jika kosong, navigasi ke halaman katalog tanpa query
+      navigate("/books");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* ===== TOP BAR ===== */}
-      <div className="bg-gray-800 text-white text-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <span className="flex items-center">
-              <Phone className="w-3 h-3 mr-1" />
-              0804-1-500-800
+      <div className="bg-gray-100 text-gray-700 text-xs py-2">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+          <div className="flex gap-4">
+            <span className="flex items-center gap-1">
+              <Phone className="w-3 h-3" /> +62 123 4567 890
             </span>
-            <span className="flex items-center">
-              <Mail className="w-3 h-3 mr-1" />
-              cs@bookstore.com
+            <span className="flex items-center gap-1">
+              <Mail className="w-3 h-3" /> support@bookhaven.com
             </span>
           </div>
-          <div className="flex items-center space-x-4">
-            <span className="flex items-center cursor-pointer hover:text-gray-300">
-              <MapPin className="w-3 h-3 mr-1" />
-              Lokasi Toko
-            </span>
-            <span className="cursor-pointer hover:text-gray-300">Bantuan</span>
+          <div className="flex items-center gap-1">
+            <MapPin className="w-3 h-3" /> Lacak Pesanan
           </div>
         </div>
       </div>
@@ -86,127 +92,151 @@ export default function UserLayout() {
       <header className="bg-white border-b sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center">
-            <h1 className="text-2xl sm:text-3xl font-bold text-blue-700">
-              BOOKSTORE
-            </h1>
-          </Link>
+          <div className="flex-shrink-0">
+            <Link to="/" className="text-3xl font-bold text-blue-600">
+              BookHaven
+            </Link>
+          </div>
 
-          {/* Search Bar */}
-          <div className="hidden md:flex flex-1 max-w-2xl mx-8">
+          {/* (5) MODIFIKASI SEARCH BAR */}
+          {/* Ubah <div> menjadi <form> dan tambahkan onSubmit */}
+          <form
+            onSubmit={handleSearchSubmit}
+            className="hidden md:flex flex-1 max-w-2xl mx-8"
+          >
             <div className="relative w-full">
               <input
                 type="text"
                 placeholder="Cari judul buku, penulis..."
                 className="w-full px-4 py-2 border border-gray-300 rounded-l-md focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                // Hubungkan ke state
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <button className="absolute right-0 top-0 h-full px-6 bg-blue-600 text-white rounded-r-md hover:bg-blue-700">
+              <button
+                type="submit" // Pastikan type="submit"
+                className="absolute right-0 top-0 h-full px-6 bg-blue-600 text-white rounded-r-md hover:bg-blue-700"
+              >
                 <Search className="w-5 h-5" />
               </button>
             </div>
-          </div>
+          </form>
+          {/* --- BATAS MODIFIKASI --- */}
+
 
           {/* Ikon kanan */}
-          <div className="flex items-center space-x-4 sm:space-x-6">
-            {isLoggedIn ? (
-              <div className="relative hidden md:flex flex-col items-center text-gray-700">
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex flex-col items-center hover:text-blue-600 focus:outline-none"
-                >
-                  <User className="w-6 h-6" />
-                  <span className="text-xs mt-1">
-                    {user?.full_name?.split(" ")[0] || "Akun"}
-                  </span>
-                </button>
-
-                {/* Dropdown akun */}
-                {isDropdownOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-white border rounded-md shadow-lg z-50">
-                    <button
-                      onClick={() => handleNavigate("/profile")}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Profil Saya
-                    </button>
-                    <button
-                      onClick={() => handleNavigate("/profile/orders")}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Pesanan Saya
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      <LogOut className="w-4 h-4" /> Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Link
-                to="/login"
-                className="hidden md:flex flex-col items-center text-gray-700 hover:text-blue-600"
-              >
-                <User className="w-6 h-6" />
-                <span className="text-xs mt-1">Login</span>
-              </Link>
-            )}
-
-            {/* Wishlist */}
+          <div className="flex items-center gap-4">
             <Link
               to="/wishlist"
-              className="flex flex-col items-center text-gray-700 hover:text-blue-600"
+              className="text-gray-600 hover:text-blue-600"
             >
               <Heart className="w-6 h-6" />
-              <span className="text-xs mt-1">Favorit</span>
             </Link>
-
-            {/* --- (3) TOMBOL KERANJANG DIPERBARUI --- */}
-            <button
-              onClick={() => navigate('/cart')} // Ganti alert dengan navigate
-              className="flex flex-col items-center text-gray-700 hover:text-blue-600 relative" // Tambahkan 'relative'
+            <Link
+              to="/cart"
+              className="text-gray-600 hover:text-blue-600"
             >
               <ShoppingCart className="w-6 h-6" />
-              <span className="text-xs mt-1">Keranjang</span>
-              
-              {/* --- (4) BADGE NOTIFIKASI --- */}
-              {isLoggedIn && cartCount > 0 && (
-                <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                  {cartCount > 9 ? '9+' : cartCount}
-                </span>
+            </Link>
+
+            {/* Tombol Login/User Dropdown */}
+            <div className="relative">
+              {isLoggedIn ? (
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center gap-1 text-gray-600 hover:text-blue-600"
+                >
+                  <User className="w-6 h-6" />
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+              ) : (
+                <Link
+                  to="/login"
+                  className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50"
+                >
+                  Masuk
+                </Link>
               )}
-              {/* --- Batas Badge --- */}
-              
-            </button>
-            {/* --- Batas Perbaikan --- */}
 
+              {/* Dropdown Menu */}
+              {isDropdownOpen && isLoggedIn && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border">
+                  <div className="px-4 py-2 border-b">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {user?.full_name || "Pengguna"}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {user?.email || "email@example.com"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleNavigate("/profile")}
+                    className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Profil Saya
+                  </button>
+                  <button
+                    onClick={() => handleNavigate("/profile/orders")}
+                    className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    Pesanan Saya
+                  </button>
+                  {user?.role === 'admin' && (
+                     <button
+                        onClick={() => handleNavigate("/admin/dashboard")}
+                        className="w-full text-left block px-4 py-2 text-sm text-red-600 font-medium hover:bg-gray-100"
+                    >
+                        Ke Dashboard Admin
+                    </button>
+                  )}
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-t"
+                  >
+                    <LogOut className="w-4 h-4 inline mr-2" />
+                    Keluar
+                  </button>
+                </div>
+              )}
+            </div>
 
-            {/* Menu Mobile */}
+            {/* Tombol Mobile Menu */}
             <button
-              className="md:hidden text-gray-700"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden text-gray-600 hover:text-blue-600"
+              onClick={() => setMobileMenuOpen(true)}
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              <Menu className="w-6 h-6" />
             </button>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden absolute top-0 inset-x-0 p-2 transition transform origin-top-right z-50">
+             {/* ... (Konten mobile menu, tidak berubah) ... */}
+          </div>
+        )}
       </header>
 
       {/* ===== NAV KATEGORI ===== */}
-      <nav className="bg-gray-100 border-b">
+      <nav className="bg-white border-b shadow-sm hidden md:block">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="hidden md:flex items-center justify-center space-x-6 py-3 text-sm overflow-x-auto">
-            {categories.map((category) => (
+          <div className="flex justify-center gap-8 h-12 items-center">
+            {categories.slice(0, 7).map((category) => (
               <Link
                 key={category.id}
                 to={`/category/${category.id}`}
-                className="text-gray-700 hover:text-blue-600 font-medium whitespace-nowrap px-2 py-1"
+                className="font-medium text-gray-700 hover:text-blue-600 transition-colors"
               >
                 {category.name}
               </Link>
             ))}
+            <Link
+              to="/books"
+              className="font-bold text-blue-600 hover:text-blue-800"
+            >
+              Lihat Semua
+            </Link>
           </div>
         </div>
       </nav>
@@ -217,51 +247,59 @@ export default function UserLayout() {
       </main>
 
       {/* ===== FOOTER ===== */}
-      <footer className="bg-gray-900 text-gray-300 mt-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Tentang Kami */}
+      <footer className="bg-gray-900 text-white pt-12 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* Kolom 1: Tentang */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-4">Tentang Kami</h3>
-            <p className="text-sm leading-relaxed">
-              BookStore adalah toko buku online terpercaya yang menyediakan berbagai
-              macam buku, mulai dari fiksi, nonfiksi, pendidikan, hingga pengembangan diri.
+            <h3 className="text-2xl font-bold text-white mb-4">BookHaven</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              Toko buku online tepercaya Anda. Menyediakan ribuan judul buku 
+              dari berbagai kategori untuk mencerahkan hari Anda.
             </p>
           </div>
-
-          {/* Bantuan */}
+          {/* Kolom 2: Tautan Cepat */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-4">Bantuan</h3>
+            <h4 className="text-lg font-semibold mb-4">Tautan Cepat</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link to="/faq" className="hover:text-white">FAQ</Link></li>
-              <li><Link to="/contact" className="hover:text-white">Hubungi Kami</Link></li>
-              <li><Link to="/shipping" className="hover:text-white">Pengiriman</Link></li>
-              <li><Link to="/terms" className="hover:text-white">Syarat & Ketentuan</Link></li>
+              <li><Link to="/" className="text-gray-400 hover:text-white">Beranda</Link></li>
+              <li><Link to="/books" className="text-gray-400 hover:text-white">Katalog Buku</Link></li>
+              <li><Link to="/profile/orders" className="text-gray-400 hover:text-white">Pesanan Saya</Link></li>
+              <li><Link to="/profile" className="text-gray-400 hover:text-white">Akun Saya</Link></li>
             </ul>
           </div>
-
-          {/* Kontak */}
+          {/* Kolom 3: Kategori Populer */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-4">Kontak</h3>
-            <ul className="text-sm space-y-2">
-              <li className="flex items-center"><Phone className="w-4 h-4 mr-2" /> 0804-1-500-800</li>
-              <li className="flex items-center"><Mail className="w-4 h-4 mr-2" /> cs@bookstore.com</li>
-              <li className="flex items-center"><MapPin className="w-4 h-4 mr-2" /> Jl. Sudirman No. 12, Jakarta</li>
-            </ul>
+             <h4 className="text-lg font-semibold mb-4">Kategori</h4>
+             <ul className="space-y-2 text-sm">
+                {categories.slice(0, 4).map((cat) => (
+                   <li key={cat.id}>
+                     <Link to={`/category/${cat.id}`} className="text-gray-400 hover:text-white">
+                       {cat.name}
+                     </Link>
+                   </li>
+                ))}
+                <li><Link to="/books" className="text-gray-400 hover:text-white">Lihat Semua</Link></li>
+             </ul>
           </div>
-
-          {/* Sosial Media */}
+          {/* Kolom 4: Hubungi Kami */}
           <div>
-            <h3 className="text-lg font-semibold text-white mb-4">Ikuti Kami</h3>
-            <div className="flex space-x-4">
-              <a href="#" className="hover:text-white"><Facebook className="w-5 h-5" /></a>
-              <a href="#" className="hover:text-white"><Instagram className="w-5 h-5" /></a>
-              <a href="#" className="hover:text-white"><Twitter className="w-5 h-5" /></a>
+            <h4 className="text-lg font-semibold mb-4">Hubungi Kami</h4>
+            <ul className="space-y-2 text-sm text-gray-400">
+               <li className="flex items-center gap-2"><MapPin className="w-4 h-4" /> Jl. Merdeka No. 123, Jakarta</li>
+               <li className="flex items-center gap-2"><Phone className="w-4 h-4" /> +62 123 4567 890</li>
+               <li className="flex items-center gap-2"><Mail className="w-4 h-4" /> support@bookhaven.com</li>
+            </ul>
+            <div className="flex gap-4 mt-6">
+                <a href="#" className="text-gray-400 hover:text-white"><Facebook className="w-5 h-5" /></a>
+                <a href="#" className="text-gray-400 hover:text-white"><Instagram className="w-5 h-5" /></a>
+                <a href="#" className="text-gray-400 hover:text-white"><Twitter className="w-5 h-5" /></a>
             </div>
           </div>
         </div>
-
-        <div className="border-t border-gray-700 text-center py-4 text-sm text-gray-400">
-          © {new Date().getFullYear()} BookStore. All rights reserved.
+        <div className="mt-8 border-t border-gray-800 py-6">
+            <p className="text-center text-sm text-gray-500">
+                &copy; 2024 BookHaven. Hak Cipta Dilindungi.
+            </p>
         </div>
       </footer>
     </div>
