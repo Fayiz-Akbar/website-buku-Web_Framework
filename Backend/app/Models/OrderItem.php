@@ -25,6 +25,7 @@ class OrderItem extends Model
         'quantity',
         'price',
         'snapshot_book_title', // <-- [PERBAIKAN] Tambahkan ini
+        'snapshot_price_per_item',
     ];
 
     /**

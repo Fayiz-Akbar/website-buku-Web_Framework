@@ -78,12 +78,18 @@ class CheckoutService
                 throw new \Exception('Harga untuk item keranjang ID: ' . $cartItem->id . ' (Buku: ' . $book->title . ') tidak ditemukan. Coba hapus dan tambahkan ulang ke keranjang.');
             }
 
-                $order->items()->create([
-                'order_id' => $order->id, // Explisit tambahkan order_id
-                'book_id' => $cartItem->book_id,
-                'quantity' => $cartItem->quantity,
-                'price' => $cartItem->price,
-                'snapshot_book_title' => $book->title, // <-- Ambil judul dari $book
+            $order->items()->create([
+                'book_id'    => $cartItem->book_id,
+                'quantity'   => $cartItem->quantity,
+                
+                // BUG FIX 1: 'price' adalah harga total (kuantitas * harga satuan)
+                'price'      => $cartItem->quantity * $cartItem->price, 
+                
+                // Snapshot data buku
+                'snapshot_book_title' => $cartItem->book->title,
+                
+                // BUG FIX 2 (Penyebab error-mu): Tambahkan harga satuan
+                'snapshot_price_per_item' => $cartItem->price,
             ]);
             }
 

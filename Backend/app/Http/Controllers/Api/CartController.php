@@ -79,7 +79,7 @@ class CartController extends Controller
             $cartItem = $cart->items()->create([
                 'book_id' => $bookId,
                 'quantity' => $quantity,
-                'price' => $book->price, // Simpan harga saat ini
+                'price'    => $book->price,
             ]);
         }
 
