@@ -15,8 +15,8 @@ import LoginPage from './pages/Shared/LoginPage';
 import RegisterPage from './pages/Register/RegisterPage';
 import BookCatalogPage from './pages/BookCatalogPage.jsx';
 import BookDetailPage from './pages/BookDetailPage.jsx';
-// --- IMPORT BARU ---
-import WishlistPage from './pages/WishlistPage.jsx'; 
+import WishlistPage from './pages/WishlistPage.jsx';
+import CartPage from './pages/CartPage'; // <-- 1. IMPORT CartPage
 import NotFoundPage from './pages/Shared/NotFoundPage';
 
 // Halaman Admin
@@ -48,6 +48,7 @@ function App() {
         <Route path="books" element={<BookCatalogPage />} /> 
         <Route path="books/:id" element={<BookDetailPage />} />
         <Route path="wishlist" element={<WishlistPage />} /> 
+        <Route path="cart" element={<CartPage />} /> {/* <-- 2. TAMBAHKAN ROUTE INI */}
       </Route>
 
       {/* --- RUTE ADMIN (DIPERBAIKI) --- */}

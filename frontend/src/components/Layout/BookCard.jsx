@@ -1,10 +1,9 @@
 // Path: frontend/src/components/Layout/BookCard.jsx
-// (Pastikan path file ini benar sesuai lokasi Anda)
-
 import React from 'react'; 
 import { Link } from 'react-router-dom';
-import { Star, Heart } from 'lucide-react'; 
-import { useWishlist } from '../../Context/WishlistContext'; // <-- IMPORT BARU (sesuaikan path)
+import { Star, Heart, ShoppingCart } from 'lucide-react'; // 1. IMPORT ShoppingCart
+import { useWishlist } from '../../Context/WishlistContext';
+import { useCart } from '../../Context/CartContext'; // 2. IMPORT useCart
 
 // Helper format Rupiah
 const formatRupiah = (number) => {
@@ -16,10 +15,9 @@ const formatRupiah = (number) => {
 };
 
 export default function BookCard({ book }) {
-    // --- GUNAKAN CONTEXT ---
     const { toggleWishlist, isInWishlist } = useWishlist(); 
-    const isFavorite = isInWishlist(book.id); // Cek status favorit dari context
-    // ----------------------
+    const { addToCart } = useCart(); // 3. AMBIL FUNGSI addToCart
+    const isFavorite = isInWishlist(book.id);
 
     const authorName = book.authors && book.authors.length > 0
         ? book.authors[0].full_name
@@ -27,12 +25,16 @@ export default function BookCard({ book }) {
     
     const discount = book.original_price ? Math.round(((book.original_price - book.price) / book.original_price) * 100) : 0;
     
-    // --- FUNGSI FAVORIT ---
     const handleToggleFavorite = (e) => {
-        e.preventDefault(); // Mencegah navigasi ke detail buku
-        toggleWishlist(book); // Panggil fungsi dari context, kirim object book
+        e.preventDefault(); 
+        toggleWishlist(book);
     };
-    // --------------------
+
+    // 4. BUAT FUNGSI BARU UNTUK ADD TO CART
+    const handleAddToCart = (e) => {
+        e.preventDefault(); // Mencegah navigasi ke detail buku
+        addToCart(book.id); // Panggil fungsi dari CartContext
+    };
 
     return (
         <Link to={`/books/${book.id}`} className="bg-white border rounded-lg overflow-hidden hover:shadow-lg transition-shadow group h-full flex flex-col">
@@ -47,10 +49,10 @@ export default function BookCard({ book }) {
                         {discount}%
                     </div>
                 )}
-                 {/* Tombol Wishlist (Hati) Terhubung */}
+                 {/* Tombol Wishlist (Hati) Tetap ada */}
                  <button
-                    onClick={handleToggleFavorite} // Panggil fungsi handle
-                    className="absolute top-2 right-2 p-1.5 bg-white rounded-full shadow hover:bg-red-50 z-10" // Tambah z-10
+                    onClick={handleToggleFavorite}
+                    className="absolute top-2 right-2 p-1.5 bg-white rounded-full shadow hover:bg-red-50 z-10"
                 >
                     <Heart className={`w-5 h-5 ${isFavorite ? 'text-red-500 fill-current' : 'text-gray-500'}`} />
                 </button>
@@ -83,9 +85,14 @@ export default function BookCard({ book }) {
                     </div>
                 </div>
                 
-                <div className="w-full text-center mt-3 px-3 py-2 bg-blue-50 border-blue-600 border text-blue-700 text-sm font-medium rounded-md hover:bg-blue-100 transition-colors">
-                    Lihat Detail
-                </div>
+                {/* 5. GANTI "Lihat Detail" MENJADI TOMBOL "Keranjang" */}
+                <button 
+                    onClick={handleAddToCart}
+                    className="w-full flex items-center justify-center gap-2 text-center mt-3 px-3 py-2 bg-blue-600 border-blue-600 border text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
+                >
+                    <ShoppingCart className="w-4 h-4" />
+                    + Keranjang
+                </button>
             </div>
         </Link>
     );

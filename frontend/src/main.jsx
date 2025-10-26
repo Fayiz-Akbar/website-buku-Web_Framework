@@ -7,6 +7,7 @@ import './index.css';
 import { AuthProvider } from './Context/AuthContext';
 // --- IMPORT BARU ---
 import { WishlistProvider } from './Context/WishlistContext'; 
+import { CartProvider } from './Context/CartContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -14,7 +15,9 @@ createRoot(document.getElementById('root')).render(
       <AuthProvider> 
         {/* --- Bungkus dengan WishlistProvider --- */}
         <WishlistProvider> 
+          <CartProvider>
             <App />
+          </CartProvider>
         </WishlistProvider>
         {/* --- Batas --- */}
       </AuthProvider>

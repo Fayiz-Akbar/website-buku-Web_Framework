@@ -3,8 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Loader2, Star, Heart, ArrowLeft, Info, Users, Calendar, Layers, Bookmark } from 'lucide-react';
-// --- IMPORT BARU ---
-import { useWishlist } from '../Context/WishlistContext'; // Sesuaikan path
+import { useWishlist } from '../Context/WishlistContext';
+import { useCart } from '../Context/CartContext'; // <-- 1. IMPORT useCart
 
 // Helper format Rupiah
 const formatRupiah = (number) => {
@@ -20,11 +20,11 @@ export default function BookDetailPage() {
     const [book, setBook] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    // --- GUNAKAN CONTEXT ---
-    const { toggleWishlist, isInWishlist } = useWishlist(); 
-    // Cek status favorit HANYA setelah data buku ada
+    
+    const { toggleWishlist, isInWishlist } = useWishlist();
+    const { addToCart } = useCart(); // <-- 2. AMBIL FUNGSI addToCart
+    
     const isFavorite = book ? isInWishlist(book.id) : false; 
-    // ----------------------
 
     useEffect(() => {
         const fetchBook = async () => {
@@ -43,17 +43,17 @@ export default function BookDetailPage() {
         fetchBook();
     }, [id]); 
 
-    // --- FUNGSI FAVORIT ---
     const handleToggleFavorite = () => {
-        if (book) { // Pastikan book sudah ada
-            toggleWishlist(book); // Panggil fungsi dari context
+        if (book) {
+            toggleWishlist(book);
         }
     };
-    // --------------------
 
     const handleAddToCart = () => {
-        // TODO: Hubungkan ke CartContext jika sudah ada/diperlukan lagi
-        alert(`Buku "${book.title}" ditambahkan ke keranjang! (Fitur segera hadir)`);
+        // <-- 3. GANTI ISI FUNGSI INI
+        if (book) {
+            addToCart(book.id); // Panggil fungsi dari CartContext
+        }
     };
 
 
@@ -114,14 +114,13 @@ export default function BookDetailPage() {
                     </div>
                     <div className="flex flex-col gap-3">
                         <button 
-                            onClick={handleAddToCart}
+                            onClick={handleAddToCart} // <-- (Fungsi ini sekarang sudah benar)
                             className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition-colors text-lg"
                         >
                             + Tambah ke Keranjang
                         </button>
-                        {/* Tombol Favorit Terhubung */}
                         <button 
-                            onClick={handleToggleFavorite} // Panggil fungsi handle
+                            onClick={handleToggleFavorite}
                             className={`w-full flex items-center justify-center gap-2 px-6 py-3 border rounded-lg shadow-sm transition-colors ${
                                 isFavorite 
                                 ? 'bg-red-50 border-red-500 text-red-600 hover:bg-red-100' 
