@@ -1,4 +1,5 @@
 <?php
+// File: Backend/app/Http/Resources/PaymentResource.php
 
 namespace App\Http\Resources;
 
@@ -14,14 +15,22 @@ class PaymentResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'order_id' => $this->order_id,
+            'method' => $this->method,
             'status' => $this->status,
-            'payment_method' => $this->payment_method,
-            'amount_due' => $this->amount_due,
-            'amount_paid' => $this->amount_paid,
-            'proof_image_url' => $this->proof_image_url,
-            'admin_notes' => $this->admin_notes,
-            'paid_at' => $this->paid_at,
-            'confirmed_at' => $this->confirmed_at,
+            'amount_due' => (float) $this->amount_due,
+            // FIX: Cast amount_paid ke float dan pastikan tidak NULL
+            'amount_paid' => (float) $this->amount_paid, 
+            'payment_date' => $this->whenNotNull('payment_date'), // Menggunakan whenNotNull
+            
+            // FIX KRITIS: Menggunakan whenNotNull untuk kolom yang mungkin NULL
+            'payment_proof_url' => $this->whenNotNull('payment_proof_url'), 
+            'transaction_id' => $this->whenNotNull('transaction_id'),
+            'admin_notes' => $this->whenNotNull('admin_notes'),
+            'paid_at' => $this->whenNotNull('paid_at'),
+            'confirmed_at' => $this->whenNotNull('confirmed_at'),
+
+            'created_at' => $this->created_at,
         ];
     }
 }

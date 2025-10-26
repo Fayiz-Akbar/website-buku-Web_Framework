@@ -1,8 +1,10 @@
-// File: frontend/src/Context/CartContext.jsx (Versi Lengkap)
+// File: frontend/src/Context/CartContext.jsx (Versi Lengkap dan Diperbaiki)
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { apiAuth } from '../api/axios'; 
-import { useAuth } from './AuthContext';
+// PERBAIKAN: Menambahkan ekstensi file .js
+import { apiAuth } from '../api/axios.js'; 
+// PERBAIKAN: Menambahkan ekstensi file .jsx
+import { useAuth } from './AuthContext.jsx'; 
 
 const CartContext = createContext();
 
@@ -33,6 +35,7 @@ export const CartProvider = ({ children }) => {
         } catch (err) {
             console.error("Gagal memuat keranjang:", err.response || err);
             setError("Gagal memuat data keranjang.");
+            // Reset keranjang jika terjadi error (misal token expired -> 401)
             setCartItems([]);
             setCartCount(0);
         } finally {
@@ -44,21 +47,24 @@ export const CartProvider = ({ children }) => {
         if (!isLoggedIn) return false;
         try {
             await apiAuth.post('/cart/add', { book_id, quantity });
-            fetchCart();
+            // Panggil fetchCart() untuk sinkronisasi data
+            fetchCart(); 
             return true;
         } catch (err) {
+            // Tampilkan pesan error dari backend (misal stok tidak cukup)
             alert(err.response?.data?.message || "Gagal menambah ke keranjang. Stok tidak cukup.");
             return false;
         }
     };
     
-    // [LOGIC BARU] FUNGSI HAPUS DARI KERANJANG
+    // [PERBAIKAN URL] FUNGSI HAPUS DARI KERANJANG
     const removeFromCart = async (cartItemId) => {
         if (!window.confirm("Apakah Anda yakin ingin menghapus item ini dari keranjang?")) {
             return; 
         }
         try {
-            await apiAuth.delete(`/cart/remove/${cartItemId}`);
+            // URL diperbaiki: dari /cart/remove/{id} menjadi /cart/{id}
+            await apiAuth.delete(`/cart/${cartItemId}`);
             fetchCart(); 
         } catch (err) {
             console.error("Gagal menghapus item:", err.response || err);
@@ -66,22 +72,25 @@ export const CartProvider = ({ children }) => {
         }
     };
 
-    // [LOGIC BARU] FUNGSI UPDATE KUANTITAS
+    // [PERBAIKAN URL] FUNGSI UPDATE KUANTITAS
     const updateQuantity = async (cartItemId, newQuantity) => {
         if (newQuantity <= 0) {
+            // Jika kuantitas 0 atau kurang, panggil fungsi hapus
             return removeFromCart(cartItemId);
         }
         
         try {
-            await apiAuth.put(`/cart/update/${cartItemId}`, { quantity: newQuantity });
+            // URL diperbaiki: dari /cart/update/{id} menjadi /cart/{id}
+            await apiAuth.put(`/cart/${cartItemId}`, { quantity: newQuantity });
             fetchCart();
         } catch (err) {
             console.error("Gagal update kuantitas:", err.response || err);
+            // Tampilkan pesan error dari backend (misal stok tidak cukup)
             alert(err.response?.data?.message || "Gagal mengubah kuantitas. Stok buku tidak cukup.");
         }
     };
 
-    // [LOGIC BARU] FUNGSI PROSES CHECKOUT (dari langkah sebelumnya)
+    // FUNGSI PROSES CHECKOUT
     const processCheckout = async (formData) => {
         if (!isLoggedIn) {
             throw new Error("Anda harus login untuk menyelesaikan checkout.");
@@ -89,18 +98,22 @@ export const CartProvider = ({ children }) => {
         
         try {
             const response = await apiAuth.post('/checkout', formData);
+            // Kosongkan keranjang di frontend setelah checkout berhasil
             fetchCart(); 
             return response.data;
         } catch (err) {
-            // Ini akan ditangani oleh CheckoutPage.jsx
+            // Lempar error agar bisa ditangani oleh CheckoutPage.jsx
             throw new Error(err.response?.data?.message || err.response?.data?.errors?.user_address_id?.[0] || "Checkout gagal. Cek input dan stok buku.");
         }
     };
 
 
     useEffect(() => {
-        fetchCart();
-    }, [isLoggedIn]); 
+        // Hanya fetch keranjang jika proses loading auth sudah selesai
+        if (!authLoading) {
+            fetchCart();
+        }
+    }, [isLoggedIn, authLoading]); // <-- Tambahkan authLoading sebagai dependency
 
     const contextValue = {
         cartItems,
@@ -124,3 +137,4 @@ export const CartProvider = ({ children }) => {
 export const useCart = () => {
     return useContext(CartContext);
 };
+

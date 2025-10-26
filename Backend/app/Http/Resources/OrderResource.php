@@ -4,8 +4,6 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-// Import resource lain yang kita butuhkan
-use App\Http\Resources\UserResource;
 use App\Http\Resources\UserAddressResource;
 use App\Http\Resources\PaymentResource;
 use App\Http\Resources\OrderItemResource;
@@ -18,15 +16,17 @@ class OrderResource extends JsonResource
             'id' => $this->id,
             'order_code' => $this->order_code,
             'status' => $this->status,
-            'total_amount' => $this->total_amount,
+
+            'total_amount' => $this->final_amount,
+            'final_amount' => $this->final_amount,
+            'total_items_price' => $this->total_items_price,
+            'shipping_cost' => $this->shipping_cost,
+            'discount_amount' => $this->discount_amount,
             'created_at' => $this->created_at,
-            
-            // Data relasi (akan di-load sesuai kebutuhan)
-            'user' => new UserResource($this->whenLoaded('user')),
-            
-            // SUDAH DISESUAIKAN: Menggunakan relasi 'address'
-            'address' => new UserAddressResource($this->whenLoaded('address')), 
-            
+
+            // Hapus UserResource agar tidak error
+            'user_id' => $this->user_id,
+            'address' => new UserAddressResource($this->whenLoaded('address')),
             'payment' => new PaymentResource($this->whenLoaded('payment')),
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
         ];

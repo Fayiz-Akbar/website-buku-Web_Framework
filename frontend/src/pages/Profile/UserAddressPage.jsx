@@ -1,28 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useAuth } from '../../Context/AuthContext';
+// FIX: Ganti 'axios' biasa dengan 'apiAuth'
+import { apiAuth } from '../../api/axios.js'; // PASTIKAN PATH INI BENAR
+import { useAuth } from '../../Context/AuthContext.jsx'; // PASTIKAN EKSTENSI INI BENAR
 import { MapPin, Plus, Trash2, Edit, CheckCircle, Loader2 } from 'lucide-react';
 import AddressForm from './AddressForm.jsx';
 
-const API_URL = 'http://localhost:8000/api/user/addresses';
+// FIX: Ganti URL dengan endpoint tanpa base URL (karena sudah di handle apiAuth)
+const API_ENDPOINT = '/user/addresses'; 
 
 // --- Komponen Alamat Individual ---
 function AddressItem({ address, fetchAddresses, openEditModal }) {
     const [loading, setLoading] = useState(false);
-    const { user, token } = useAuth();
+    const { user, token } = useAuth(); // token tidak perlu lagi di-passing manual
 
     const handleSetPrimary = async () => {
         setLoading(true);
         try {
-            await axios.put(
-                `${API_URL}/${address.id}/primary`,
-                {},
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+            // FIX: Gunakan apiAuth
+            await apiAuth.put(`${API_ENDPOINT}/${address.id}/primary`);
             fetchAddresses();
         } catch (error) {
             window.alert("Gagal menetapkan alamat utama. Coba lagi.");
@@ -36,11 +31,8 @@ function AddressItem({ address, fetchAddresses, openEditModal }) {
         if (!window.confirm(`Yakin ingin menghapus alamat "${address.address_label}"?`)) return;
         setLoading(true);
         try {
-            await axios.delete(`${API_URL}/${address.id}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+            // FIX: Gunakan apiAuth
+            await apiAuth.delete(`${API_ENDPOINT}/${address.id}`);
             fetchAddresses();
         } catch (error) {
             window.alert("Gagal menghapus alamat. Coba lagi.");
@@ -95,7 +87,7 @@ export default function UserAddressPage() {
     const [addresses, setAddresses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const { isLoggedIn, token } = useAuth();
+    const { isLoggedIn } = useAuth(); // token tidak perlu
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [addressToEdit, setAddressToEdit] = useState(null);
@@ -105,15 +97,17 @@ export default function UserAddressPage() {
         setLoading(true);
         setError('');
         try {
-            const response = await axios.get(API_URL, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
+            // FIX: Gunakan apiAuth untuk otorisasi
+            const response = await apiAuth.get(API_ENDPOINT);
             setAddresses(response.data.data || []);
         } catch (err) {
             console.error(err);
-            setError('Gagal memuat daftar alamat. Pastikan Anda sudah login.');
+            // Tambahkan cek jika error adalah 401
+            if (err.response && err.response.status === 401) {
+                 setError('Sesi login berakhir atau token tidak valid. Mohon logout dan login kembali.');
+            } else {
+                 setError('Gagal memuat daftar alamat.');
+            }
         } finally {
             setLoading(false);
         }

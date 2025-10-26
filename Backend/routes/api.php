@@ -4,32 +4,44 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+// =================================================================
+// PERBAIKAN NAMESPACE
+// =================================================================
+// Kontroler yang menampilkan gambar (Buku, Kategori, dll.)
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookController;
-use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\AuthorController;
-use App\Http\Controllers\PublisherController;
-use App\Http\Controllers\AdminOrderController;
-use App\Http\Controllers\CartController;
-use App\Http\Controllers\UserAddressController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UserAddressController;
+
+// Kontroler fungsional (Keranjang, Admin, dll.)
+use App\Http\Controllers\Api\AdminOrderController;
+use App\Http\Controllers\Api\AuthorController;
+use App\Http\Controllers\Api\BookController as AdminBookController; // Alias untuk Admin
+use App\Http\Controllers\Api\CartController; // <-- Benar untuk Keranjang
+use App\Http\Controllers\Api\CategoryController as AdminCategoryController; // Alias untuk Admin
+use App\Http\Controllers\Api\CheckoutController;
+use App\Http\Controllers\Api\PublisherController;
+// Import Controller Riwayat Pesanan
+use App\Http\Controllers\Api\UserOrderController;
+// =================================================================
+
 
 /*
 |--------------------------------------------------------------------------
 | RUTE PUBLIK (Tidak perlu login)
 |--------------------------------------------------------------------------
 */
-// Autentikasi
+// 🔐 Autentikasi
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
-// Read-Only Buku
-Route::get('/books', [BookController::class, 'index']); // Daftar buku
-Route::get('/books/{book}', [BookController::class, 'show']); // ganti {id} -> {book} // Detail buku
+// 📚 Buku & Kategori (Menggunakan kontroler root agar gambar muncul)
+Route::get('/books', [BookController::class, 'index']);
+Route::get('/books/{book}', [BookController::class, 'show']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{id}', [CategoryController::class, 'show']);
-Route::get('/categories/{id}/books', [BookController::class, 'byCategory']); // opsional
+Route::get('/categories/{id}/books', [BookController::class, 'byCategory']);
 
 /*
 |--------------------------------------------------------------------------
@@ -38,68 +50,78 @@ Route::get('/categories/{id}/books', [BookController::class, 'byCategory']); // 
 */
 Route::middleware('auth:sanctum')->group(function () {
 
+    // 🔒 Logout
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Ambil data user saat ini
+    // 👤 Ambil data user saat ini
     Route::get('/user', fn (Request $r) => $r->user());
 
-    // Update profil user (nama, alamat, foto profil)
+    // ✏️ Update profil user (nama, alamat, foto profil)
     Route::put('/user/profile', [AuthController::class, 'updateProfile']);
 
-    // Update password user
+    // 🔑 Update password user
     Route::post('/user/password', [AuthController::class, 'updatePassword']);
 
-    // Cart
+    // =================================================================
+    // 🛒 Keranjang belanja (Menggunakan Api\CartController)
+    // =================================================================
     Route::get('/cart', [CartController::class, 'index']);
     Route::post('/cart/add', [CartController::class, 'addBook']);
     Route::put('/cart/{cartItemId}', [CartController::class, 'updateQuantity']);
     Route::delete('/cart/{cartItemId}', [CartController::class, 'removeBook']);
 
-    // Profile
+    // 📸 Profil tambahan
     Route::post('/profile/photo', [ProfileController::class, 'updatePhoto']);
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::get('/me', [ProfileController::class, 'me']);
 
-    
     // 📦 Manajemen alamat pengguna
-    Route::get('/user/addresses', [UserAddressController::class, 'index']); // Ambil semua alamat
-    Route::post('/user/addresses', [UserAddressController::class, 'store']); // Tambah alamat baru
-    Route::get('/user/addresses/{id}', [UserAddressController::class, 'show']); // Detail alamat
-    Route::put('/user/addresses/{id}', [UserAddressController::class, 'update']); // Update alamat
-    Route::delete('/user/addresses/{id}', [UserAddressController::class, 'destroy']); // Hapus alamat
-    Route::put('/user/addresses/{id}/primary', [UserAddressController::class, 'setPrimary']); // Set alamat utama
+    Route::get('/user/addresses', [UserAddressController::class, 'index']);
+    Route::post('/user/addresses', [UserAddressController::class, 'store']);
+    Route::get('/user/addresses/{id}', [UserAddressController::class, 'show']);
+    Route::put('/user/addresses/{id}', [UserAddressController::class, 'update']);
+    Route::delete('/user/addresses/{id}', [UserAddressController::class, 'destroy']);
+    Route::put('/user/addresses/{id}/primary', [UserAddressController::class, 'setPrimary']);
+
+    // 💳 Checkout (Menggunakan Api\CheckoutController)
+    // PERBAIKAN NAMA FUNGSI: Harus 'processCheckout' sesuai Controller Anda
+    Route::post('/checkout', [CheckoutController::class, 'processCheckout']); // <-- Perbaikan di sini
+
+    // 🧾 Riwayat Pesanan Pengguna
+    Route::get('/my-orders', [UserOrderController::class, 'index']);
+    Route::get('/my-orders/{order}', [UserOrderController::class, 'show']);
 });
 
 /*
 |--------------------------------------------------------------------------
-| RUTE ADMIN (Perlu Login & Role Admin - ['auth:sanctum', 'admin'])
+| RUTE ADMIN (Perlu Login & Role Admin)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:sanctum', 'admin'])
     ->prefix('admin')
     ->group(function () {
 
-        // CRUD Kategori
-        Route::apiResource('/categories', CategoryController::class);
+        // 🗂️ CRUD Kategori (Menggunakan kontroler Admin)
+        Route::apiResource('/categories', AdminCategoryController::class);
 
-        // CRUD Penulis
+        // ✍️ CRUD Penulis
         Route::apiResource('/authors', AuthorController::class);
 
-        // CRUD Penerbit
+        // 🏢 CRUD Penerbit
         Route::apiResource('/publishers', PublisherController::class);
 
-        // CRUD Buku (store, update, destroy)
-        Route::apiResource('/books', BookController::class)->only([
+        // 📘 CRUD Buku (Menggunakan kontroler Admin)
+        Route::apiResource('/books', AdminBookController::class)->only([
             'store', 'update', 'destroy'
         ]);
 
-        // Manajemen Pesanan
+        // 📦 Manajemen Pesanan
         Route::get('/orders', [AdminOrderController::class, 'index']);
         Route::get('/orders/{order}', [AdminOrderController::class, 'show']);
         Route::post('/orders/{order}/approve', [AdminOrderController::class, 'approve']);
         Route::post('/orders/{order}/reject', [AdminOrderController::class, 'reject']);
 
-        // Tes Admin
+        // 🧪 Tes Admin
         Route::get('/test', function (Request $request) {
             return response()->json([
                 'message' => 'Selamat datang, Admin!',
@@ -107,3 +129,4 @@ Route::middleware(['auth:sanctum', 'admin'])
             ]);
         });
     });
+

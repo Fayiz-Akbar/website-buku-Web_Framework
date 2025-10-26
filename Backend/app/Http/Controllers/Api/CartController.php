@@ -4,10 +4,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Book; // <-- Import model Book
+use App\Models\Book; // <-- Diperlukan untuk Book::findOrFail
 use App\Models\CartItem; // <-- Import model CartItem
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth; // <-- Import Auth facade
+use Illuminate\Support\Facades\Auth; // <-- Diperlukan jika menggunakan Auth::user()
 use Illuminate\Support\Facades\Validator;
 
 class CartController extends Controller
@@ -80,7 +80,7 @@ class CartController extends Controller
             $cartItem = $cart->items()->create([
                 'book_id' => $bookId,
                 'quantity' => $quantity,
-                'price'    => $book->price,
+                'price'    => $book->price, // Simpan harga saat ditambahkan
             ]);
         }
 
@@ -91,5 +91,81 @@ class CartController extends Controller
         ], 201); // 201 Created
     }
 
-    // ... (Fungsi removeBook dan updateQuantity Anda)
+    // =================================================================
+    // FUNGSI BARU YANG HILANG
+    // =================================================================
+
+    /**
+     * Mengupdate jumlah item di keranjang.
+     * PUT /api/cart/{cartItemId}
+     */
+    public function updateQuantity(Request $request, $cartItemId)
+    {
+        // 1. Validasi input
+        $validator = Validator::make($request->all(), [
+            'quantity' => 'required|integer|min:1', // Jumlah minimal 1
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // 2. Dapatkan data
+        $newQuantity = $request->input('quantity');
+        $user = $request->user();
+
+        // 3. Cari item keranjang milik user
+        // Pastikan cart ada sebelum mengakses items
+        if (!$user->cart) {
+             return response()->json(['message' => 'Keranjang tidak ditemukan.'], 404);
+        }
+        $cartItem = $user->cart->items()->with('book')->find($cartItemId);
+
+        if (!$cartItem) {
+            return response()->json(['message' => 'Item keranjang tidak ditemukan.'], 404);
+        }
+
+        // 4. Cek stok buku
+        if ($cartItem->book->stock < $newQuantity) {
+            return response()->json(['message' => 'Stok buku tidak mencukupi.'], 400);
+        }
+
+        // 5. Update kuantitas
+        $cartItem->quantity = $newQuantity;
+        $cartItem->save();
+
+        // 6. Kembalikan response sukses
+        return response()->json([
+            'message' => 'Kuantitas berhasil diperbarui.',
+            'data' => $cartItem
+        ], 200);
+    }
+
+    /**
+     * Menghapus item dari keranjang.
+     * DELETE /api/cart/{cartItemId}
+     */
+    public function removeBook(Request $request, $cartItemId)
+    {
+        // 1. Dapatkan user
+        $user = $request->user();
+
+        // 2. Cari item keranjang milik user
+        // Pastikan cart ada sebelum mengakses items
+        if (!$user->cart) {
+             return response()->json(['message' => 'Keranjang tidak ditemukan.'], 404);
+        }
+        $cartItem = $user->cart->items()->find($cartItemId);
+
+        if (!$cartItem) {
+            return response()->json(['message' => 'Item keranjang tidak ditemukan.'], 404);
+        }
+
+        // 3. Hapus item
+        $cartItem->delete();
+
+        // 4. Kembalikan response sukses
+        return response()->json(['message' => 'Buku berhasil dihapus dari keranjang.'], 200);
+    }
 }
+

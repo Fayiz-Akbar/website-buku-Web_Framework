@@ -1,4 +1,5 @@
 <?php
+// File: Backend/app/Http/Resources/UserAddressResource.php
 
 namespace App\Http\Resources;
 
@@ -14,13 +15,16 @@ class UserAddressResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'label' => $this->label,
-            'recipient_name' => $this->recipient_name,
-            'recipient_phone' => $this->recipient_phone,
-            'full_address' => $this->full_address,
-            'city' => $this->city,
-            'postal_code' => $this->postal_code,
-            'is_primary' => $this->is_primary,
+            // Menggunakan whenNotNull() secara defensif untuk semua string
+            'address_label' => $this->whenNotNull('address_label'),
+            'recipient_name' => $this->whenNotNull('recipient_name'),
+            'phone_number' => $this->whenNotNull('phone_number'),
+            'address_line' => $this->whenNotNull('address_line'),
+            'city' => $this->whenNotNull('city'),
+            'province' => $this->whenNotNull('province'),
+            'postal_code' => $this->whenNotNull('postal_code'),
+            'is_primary' => (bool) $this->is_primary, 
+            'created_at' => $this->created_at,
         ];
     }
 }

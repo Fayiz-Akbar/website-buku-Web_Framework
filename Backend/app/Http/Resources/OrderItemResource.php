@@ -1,4 +1,5 @@
 <?php
+// File: Backend/app/Http/Resources/OrderItemResource.php
 
 namespace App\Http\Resources;
 
@@ -20,8 +21,8 @@ class OrderItemResource extends JsonResource
             'snapshot_book_title' => $this->snapshot_book_title,
             'snapshot_price_per_item' => $this->snapshot_price_per_item,
             
-            // (Opsional) Sertakan data buku jika relasinya di-load
-            'book' => new BookResource($this->whenLoaded('book')),
+            // FIX KRITIS: Menggunakan BookResource::make() untuk penanganan null yang lebih aman
+            'book' => BookResource::make($this->whenLoaded('book')),
         ];
     }
 }

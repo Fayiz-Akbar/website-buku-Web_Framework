@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+// FIX: Ganti 'axios' dengan 'apiAuth'
+import { apiAuth } from '../../api/axios.js'; 
 import { MapPin, User, Phone, Globe, Save, X } from 'lucide-react';
 
-const API_URL = 'http://localhost:8000/api/user/addresses';
+// FIX: Gunakan ENDPOINT relatif, apiAuth sudah menangani base URL
+const API_ENDPOINT = '/user/addresses'; 
 
 export default function AddressForm({ currentAddress, fetchAddresses, closeModal }) {
     const isEdit = !!currentAddress; // True jika mode edit
@@ -16,7 +18,8 @@ export default function AddressForm({ currentAddress, fetchAddresses, closeModal
         city: currentAddress?.city || '',
         province: currentAddress?.province || '',
         postal_code: currentAddress?.postal_code || '',
-        is_primary: currentAddress?.is_primary || false,
+        // is_primary tidak perlu di-set jika edit/add. Server akan menangani primary.
+        is_primary: currentAddress?.is_primary || false, 
     });
     
     const [error, setError] = useState(null);
@@ -36,15 +39,26 @@ export default function AddressForm({ currentAddress, fetchAddresses, closeModal
         setLoading(true);
 
         const method = isEdit ? 'put' : 'post';
-        const url = isEdit ? `${API_URL}/${currentAddress.id}` : API_URL;
+        // FIX: URL menggunakan ENDPOINT
+        const url = isEdit ? `${API_ENDPOINT}/${currentAddress.id}` : API_ENDPOINT;
 
         try {
-            await axios[method](url, form);
+            // FIX: Gunakan apiAuth untuk otorisasi
+            await apiAuth[method](url, form); 
             closeModal(); // Tutup modal setelah sukses
             fetchAddresses(); // Refresh daftar alamat
         } catch (err) {
-            console.error(err);
-            setError(err.response?.data?.message || 'Gagal menyimpan alamat. Periksa input.');
+            console.error("Gagal menyimpan alamat:", err);
+            // Tangani error validasi dari Laravel
+            const apiError = err.response?.data?.errors || err.response?.data?.message || 'Gagal menyimpan alamat. Periksa input.';
+            
+            if (typeof apiError === 'object') {
+                 // Jika error adalah objek validasi (Laravel standard)
+                const firstError = Object.values(apiError)[0][0];
+                setError(firstError);
+            } else {
+                setError(apiError);
+            }
         } finally {
             setLoading(false);
         }

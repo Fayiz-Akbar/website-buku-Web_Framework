@@ -14,7 +14,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 
 import { useCart } from '../Context/CartContext'; 
-import { useAuth } from './../Context/AuthContext';
+import { useAuth } from './../context/AuthContext';
 
 // Import Swiper styles
 import 'swiper/css';

@@ -1,10 +1,12 @@
 // Di dalam file AuthContext.jsx
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+// HAPUS: import axios from 'axios';
+// TAMBAHKAN: import dari file axios.js Anda
+import { apiAuth, apiPublic, setAuthToken } from '../api/axios';
 
-export const AuthContext = createContext(null); // sediakan named export juga
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+export const AuthContext = createContext(null);
+// HAPUS: const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api"; (Tidak perlu lagi)
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -13,8 +15,11 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         if (token) {
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            axios.get(`${API_URL}/user`) 
+            // GUNAKAN setAuthToken untuk instance apiAuth
+            setAuthToken(token); 
+            
+            // GUNAKAN apiAuth untuk mengambil data user
+            apiAuth.get('/user') 
                 .then(response => {
                     setUser(response.data);
                 })
@@ -22,8 +27,8 @@ export const AuthProvider = ({ children }) => {
                     // Token tidak valid, hapus
                     localStorage.removeItem('token');
                     setToken(null);
-                    setUser(null); // Pastikan user juga di-null-kan
-                    delete axios.defaults.headers.common['Authorization'];
+                    setUser(null);
+                    setAuthToken(null); // Hapus token dari apiAuth juga
                 })
                 .finally(() => {
                     setLoading(false);
@@ -35,39 +40,35 @@ export const AuthProvider = ({ children }) => {
 
     // --- FUNGSI LOGIN YANG DIPERBAIKI ---
     const login = async (email, password) => {
-        
-        // 1. Bungkus semua dengan try...catch
         try {
-            // Hapus header auth lama jika ada
-            delete axios.defaults.headers.common['Authorization'];
+            // Hapus header auth lama (jika ada) dari apiAuth
+            setAuthToken(null);
             
-            // 2. Coba lakukan request login
-            const response = await axios.post(`${API_URL}/login`, { email, password });
+            // GUNAKAN apiPublic untuk request login
+            const response = await apiPublic.post('/login', { email, password });
 
-            // 3. Cek jika backend merespons DENGAN token dan user
             if (response.data && response.data.token && response.data.user) {
                 const { token: apiToken, user: apiUser } = response.data;
 
-                // 4. Simpan state
+                // Simpan state
                 setToken(apiToken);
                 setUser(apiUser);
                 localStorage.setItem('token', apiToken);
-                axios.defaults.headers.common['Authorization'] = `Bearer ${apiToken}`;
                 
-                return apiUser; // Kembalikan user data ke LoginPage
+                // Atur token di instance apiAuth
+                setAuthToken(apiToken); 
+                
+                return apiUser; 
             } else {
-                // Seharusnya tidak terjadi, tapi jika backend 200 OK tapi data aneh
                 throw new Error('Respons login tidak valid.');
             }
         } catch (error) {
-            // 5. Jika axios GAGAL (401, 422, 500)
-            // Hapus token lama jika ada (jaga-jaga)
+            // Jika gagal, pastikan semua bersih
             localStorage.removeItem('token');
             setToken(null);
             setUser(null);
-            delete axios.defaults.headers.common['Authorization'];
+            setAuthToken(null);
             
-            // 6. Lempar error ini kembali ke LoginPage.jsx agar bisa ditangani di sana
             throw error; 
         }
     };
@@ -77,30 +78,31 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setToken(null);
         localStorage.removeItem('token');
-        delete axios.defaults.headers.common['Authorization'];
+        // Hapus token dari instance apiAuth
+        setAuthToken(null); 
     };
 
     const updateUser = (updatedUserData) => {
-      setUser(updatedUserData);
+        setUser(updatedUserData);
     };
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+    if (loading) {
+        return <div>Loading...</div>;
+    }
 
-  return (
-    <AuthContext.Provider
-      value={{ user, setUser, token, login, logout, updateUser, isLoggedIn: !!token }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+    return (
+        <AuthContext.Provider
+            value={{ user, setUser, token, login, logout, updateUser, isLoggedIn: !!token }}
+        >
+            {children}
+        </AuthContext.Provider>
+    );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
 }
