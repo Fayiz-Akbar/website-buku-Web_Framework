@@ -2,15 +2,14 @@
 
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-// [PERBAIKAN 1] Import API client terpusat
-import { api } from '../../api/axios'; 
+import { api } from '../../api/axios'; // Import API client terpusat
+// Asumsi: Anda sudah membuat file axios.js
 
 const RegisterPage = () => {
     const navigate = useNavigate();
 
-    // [PERBAIKAN 2] Menggunakan state tunggal untuk formData
     const [formData, setFormData] = useState({
-        full_name: '', // Sesuai dengan kolom backend
+        full_name: '',
         email: '',
         password: '',
         password_confirmation: '',
@@ -18,16 +17,14 @@ const RegisterPage = () => {
 
     const [errors, setErrors] = useState({});
     const [apiError, setApiError] = useState(null);
-    const [successMsg, setSuccessMsg] = useState(null); // Tambahkan state sukses
-    const [isLoading, setIsLoading] = useState(false); // Tambahkan state loading
+    const [successMsg, setSuccessMsg] = useState(null); 
+    const [isLoading, setIsLoading] = useState(false);
 
-    // [PERBAIKAN 3] Handler tunggal untuk perubahan input
     const handleChange = (e) => {
         setFormData({
             ...formData,
             [e.target.name]: e.target.value,
         });
-        // Hapus error spesifik saat user mulai mengetik
         if (errors[e.target.name]) {
             setErrors(prev => ({ ...prev, [e.target.name]: null }));
         }
@@ -41,11 +38,12 @@ const RegisterPage = () => {
         setSuccessMsg(null);
 
         try {
-            // [PERBAIKAN 4] Menggunakan api client dan endpoint yang benar
-            await api.post('/register', formData);
+            // Panggil endpoint register Laravel
+            const response = await api.post('/register', formData);
 
-            // --- Registrasi Berhasil ---
-            setSuccessMsg('Registrasi berhasil! Silakan cek email Anda untuk notifikasi (via Mailgun) dan login.');
+            // --- Registrasi Berhasil (Status 201) ---
+            // Pesan sukses dari backend: response.data.message
+            setSuccessMsg(response.data.message || 'Registrasi berhasil! Silakan cek email Anda dan login.');
             
             // Bersihkan form
             setFormData({ full_name: '', email: '', password: '', password_confirmation: '' });
@@ -69,7 +67,9 @@ const RegisterPage = () => {
                         setApiError(data.message);
                     }
                 } else {
-                    setApiError(`Terjadi error: ${status}. Silakan coba lagi nanti.`);
+                    // Error non-validasi (misal 500 jika PHPMailer error)
+                    // Jika 500, tampilkan pesan generik
+                    setApiError(`Pendaftaran berhasil tetapi terjadi error (${status}) pada pengiriman email. ${data.message || 'Silakan cek log server.'}`);
                 }
             } else {
                 setApiError('Registrasi gagal. Server tidak merespons atau network error.');
@@ -84,33 +84,33 @@ const RegisterPage = () => {
             <form onSubmit={handleSubmit} className="p-8 bg-white shadow-md rounded-lg max-w-md w-full">
                 <h2 className="text-2xl font-bold mb-6 text-center">Daftar Akun Baru</h2>
                 
-                {/* [PERBAIKAN 5] Tampilkan pesan Sukses / General Error */}
+                {/* Feedback Sukses */}
                 {successMsg && (
                     <div className="p-3 text-sm text-green-700 bg-green-100 border border-green-400 rounded mb-4">
                         {successMsg}
                     </div>
                 )}
 
+                {/* Feedback General Error */}
                 {apiError && (
                     <div className="text-red-700 mb-4 p-3 bg-red-100 border border-red-400 rounded">
                         {apiError}
                     </div>
                 )}
 
-                {/* --- Form Fields --- */}
+                {/* --- Form Fields (Tetap sama) --- */}
                 
                 {/* Nama Lengkap (full_name) */}
                 <div className="mb-4">
                     <label className="block text-gray-700 text-sm font-bold mb-2">Nama Lengkap</label>
                     <input
                         type="text"
-                        name="full_name" // [PERBAIKAN 6] Gunakan name="full_name"
+                        name="full_name" 
                         value={formData.full_name}
                         onChange={handleChange}
                         className={`w-full p-2 border rounded ${errors.full_name ? 'border-red-500' : 'border-gray-300'}`}
                         required
                     />
-                    {/* Tampilkan error 'full_name' */}
                     {errors.full_name && <small className="text-red-500">{errors.full_name[0]}</small>}
                 </div>
 
@@ -150,7 +150,6 @@ const RegisterPage = () => {
                         name="password_confirmation"
                         value={formData.password_confirmation}
                         onChange={handleChange}
-                        // Error konfirmasi password biasanya muncul di field 'password' atau 'password_confirmation'
                         className={`w-full p-2 border rounded ${errors.password_confirmation ? 'border-red-500' : 'border-gray-300'}`}
                         required
                     />
@@ -159,7 +158,7 @@ const RegisterPage = () => {
 
                 <button 
                     type="submit" 
-                    disabled={isLoading} // [PERBAIKAN 7] Nonaktifkan saat loading
+                    disabled={isLoading} 
                     className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-200 disabled:bg-gray-400"
                 >
                     {isLoading ? 'Mendaftarkan...' : 'Daftar'}
