@@ -31,6 +31,9 @@ import PublisherListPage from './pages/Publishers/PublisherListPage';
 import PublisherFormPage from './pages/Publishers/PublisherFormPage';
 import OrderListPage from './pages/Orders/OrderListPage';
 import OrderDetailPage from './pages/Orders/OrderDetailPage';
+import CheckoutPage from './pages/CheckoutPage';
+import CartPage from './pages/CartPage'; 
+
 
 function App() {
   return (
@@ -47,6 +50,8 @@ function App() {
         <Route path="/books" element={<BookCatalogPage />} />
         <Route path="/books/:id" element={<BookDetailPage />} />
         <Route path="/wishlist" element={<WishlistPage />} />
+        <Route path="/cart" element={<CartPage />} />
+    <Route path="/checkout" element={<CheckoutPage />} /> {/* [PERBAIKAN] Tambahkan Rute Checkout */}
         {/* Rute Cart dan Checkout diabaikan sesuai instruksi Anda */}
         
         {/* --- RUTE PROFIL (Dilindungi AuthGuard) --- */}

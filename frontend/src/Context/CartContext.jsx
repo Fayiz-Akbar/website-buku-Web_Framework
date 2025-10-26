@@ -1,120 +1,126 @@
-// frontend/src/Context/CartContext.jsx
+// File: frontend/src/Context/CartContext.jsx (Versi Lengkap)
 
-import { createContext, useContext, useState, useEffect } from "react";
-// --- PERBAIKAN: Gunakan import axios standar dari NPM (mengabaikan file lokal yang rusak) ---
-import axios from "axios"; 
-import { useAuth } from "./AuthContext";
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { apiAuth } from '../api/axios'; 
+import { useAuth } from './AuthContext'; 
 
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { user } = useAuth(); 
+    const [cartItems, setCartItems] = useState([]);
+    const [cartCount, setCartCount] = useState(0); 
+    const [loading, setLoading] = useState(true); 
+    const [error, setError] = useState(null);
+    const { isLoggedIn } = useAuth(); 
 
-  // Fungsi untuk mengambil data keranjang dari backend
-  const fetchCartItems = async () => {
-    if (!user) {
-        setCartItems([]);
-        setLoading(false);
-        return;
-    }
-    
-    try {
-      setLoading(true);
-      // Menggunakan axios standar dari npm
-      const response = await axios.get("http://localhost:8000/api/cart");
-      setCartItems(response.data.data); 
-    } catch (error) {
-      console.error("Failed to fetch cart items:", error);
-      if (error.response && error.response.status === 401) {
-          setCartItems([]); 
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchCart = async () => {
+        if (!isLoggedIn) {
+            setCartItems([]);
+            setCartCount(0);
+            setLoading(false);
+            return;
+        }
 
-  // Ambil data keranjang saat user login atau berubah
-  useEffect(() => {
-    fetchCartItems();
-  }, [user]);
+        setLoading(true);
+        try {
+            const response = await apiAuth.get('/cart'); 
+            const items = response.data.data;
+            const totalCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Fungsi untuk menambah buku ke keranjang
-  const addToCart = async (bookId, quantity = 1) => {
-    if (!user) {
-        alert("Silakan login untuk menambahkan ke keranjang.");
-        return;
-    }
+            setCartItems(items);
+            setCartCount(totalCount);
+            setError(null);
+        } catch (err) {
+            console.error("Gagal memuat keranjang:", err.response || err);
+            setError("Gagal memuat data keranjang.");
+            setCartItems([]);
+            setCartCount(0);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    try {
-      // Menggunakan axios standar dari npm
-      await axios.post("http://localhost:8000/api/cart", {
-        book_id: bookId,
-        quantity: quantity,
-      });
-      await fetchCartItems();
-      alert("Buku berhasil ditambahkan ke keranjang!");
-    } catch (error) {
-      console.error("Failed to add to cart:", error);
-      alert("Gagal menambahkan ke keranjang.");
-    }
-  };
+    const addToCart = async (book_id, quantity = 1) => {
+        if (!isLoggedIn) return false;
+        try {
+            await apiAuth.post('/cart/add', { book_id, quantity });
+            fetchCart();
+            return true;
+        } catch (err) {
+            alert(err.response?.data?.message || "Gagal menambah ke keranjang. Stok tidak cukup.");
+            return false;
+        }
+    };
+    
+    // [LOGIC BARU] FUNGSI HAPUS DARI KERANJANG
+    const removeFromCart = async (cartItemId) => {
+        if (!window.confirm("Apakah Anda yakin ingin menghapus item ini dari keranjang?")) {
+            return; 
+        }
+        try {
+            await apiAuth.delete(`/cart/remove/${cartItemId}`);
+            fetchCart(); 
+        } catch (err) {
+            console.error("Gagal menghapus item:", err.response || err);
+            alert("Gagal menghapus item dari keranjang.");
+        }
+    };
 
-  // Fungsi untuk menghapus item dari keranjang
-  const removeFromCart = async (cartItemId) => {
-    try {
-      await axios.delete(`http://localhost:8000/api/cart/${cartItemId}`);
-      setCartItems((prevItems) =>
-        prevItems.filter((item) => item.id !== cartItemId)
-      );
-    } catch (error) {
-      console.error("Failed to remove from cart:", error);
-      alert("Gagal menghapus item.");
-    }
-  };
+    // [LOGIC BARU] FUNGSI UPDATE KUANTITAS
+    const updateQuantity = async (cartItemId, newQuantity) => {
+        if (newQuantity <= 0) {
+            return removeFromCart(cartItemId);
+        }
+        
+        try {
+            await apiAuth.put(`/cart/update/${cartItemId}`, { quantity: newQuantity });
+            fetchCart();
+        } catch (err) {
+            console.error("Gagal update kuantitas:", err.response || err);
+            alert(err.response?.data?.message || "Gagal mengubah kuantitas. Stok buku tidak cukup.");
+        }
+    };
 
-  // Fungsi untuk update kuantitas
-  const updateQuantity = async (cartItemId, quantity) => {
-     if (quantity < 1) {
-         return removeFromCart(cartItemId);
-     }
+    // [LOGIC BARU] FUNGSI PROSES CHECKOUT (dari langkah sebelumnya)
+    const processCheckout = async (formData) => {
+        if (!isLoggedIn) {
+            throw new Error("Anda harus login untuk menyelesaikan checkout.");
+        }
+        
+        try {
+            const response = await apiAuth.post('/checkout', formData);
+            fetchCart(); 
+            return response.data;
+        } catch (err) {
+            // Ini akan ditangani oleh CheckoutPage.jsx
+            throw new Error(err.response?.data?.message || err.response?.data?.errors?.user_address_id?.[0] || "Checkout gagal. Cek input dan stok buku.");
+        }
+    };
 
-    try {
-      const response = await axios.put(`http://localhost:8000/api/cart/${cartItemId}`, {
-        quantity: quantity,
-      });
-      setCartItems((prevItems) =>
-        prevItems.map((item) =>
-          item.id === cartItemId ? response.data.data : item
-        )
-      );
-    } catch (error) {
-      console.error("Failed to update quantity:", error);
-      alert("Gagal update kuantitas.");
-    }
-  };
-  
-  const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
-  return (
-    <CartContext.Provider
-      value={{
-        cartItems,
-        cartCount,
-        loading,
-        fetchCartItems,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
-  );
+    useEffect(() => {
+        fetchCart();
+    }, [isLoggedIn]); 
+
+    const contextValue = {
+        cartItems,
+        cartCount,
+        loading, 
+        error,
+        fetchCart,
+        addToCart,
+        removeFromCart, 
+        updateQuantity, 
+        processCheckout,
+    };
+
+    return (
+        <CartContext.Provider value={contextValue}>
+            {children}
+        </CartContext.Provider>
+    );
 };
 
-// Custom hook untuk mempermudah penggunaan context
 export const useCart = () => {
-  return useContext(CartContext);
+    return useContext(CartContext);
 };

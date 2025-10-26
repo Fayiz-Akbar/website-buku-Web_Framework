@@ -1,23 +1,32 @@
 // Path: frontend/src/pages/HomePage.jsx
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+// [PERBAIKAN 1] Ganti axios dengan API client terpusat
+import { api } from '../api/axios'; 
+// Import lucide-react icons (sudah ada)
 import { BookOpen, Tag, Award, Bookmark, Layers, Monitor, Loader2 } from 'lucide-react';
 
-// Import Swiper React components dan modulnya
+// Import Swiper React components dan modulnya (sudah ada)
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 
-// Import Swiper styles
+// [PERBAIKAN 2] Import Contexts untuk Cart dan Auth
+import { useCart } from '../Context/CartContext'; 
+import { useAuth } from '../Context/AuthContext';
+
+// Import Swiper styles (sudah ada)
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
 // --- IMPORT DARI FILE TERPISAH ---
+// Asumsi BookCard menerima prop 'onAddToCart'
 import BookCard from '../components/Layout/BookCard'; 
 
-// --- Komponen Kartu Kategori ---
+// --- Komponen Kartu Kategori (Dibuat di sini untuk konsistensi) ---
 function CategoryCard({ category }) {
+    // ... (Kode CategoryCard tetap sama) ...
     const getCategoryIcon = (categoryName) => {
         switch (categoryName.toLowerCase()) {
             case 'fiksi': return <BookOpen className="w-10 h-10 text-blue-600 group-hover:text-white" />;
@@ -43,29 +52,48 @@ function CategoryCard({ category }) {
 
 // --- Komponen Halaman Utama (Konten) ---
 export default function HomePage() {
+    // [PERBAIKAN 3] Gunakan hook useCart dan useAuth
+    const { addToCart } = useCart();
+    const { isLoggedIn } = useAuth(); 
+
     const [latestBooks, setLatestBooks] = useState([]);
     const [recommendedBooks, setRecommendedBooks] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // [PERBAIKAN 4] Handler Add to Cart
+    const handleAddToCart = (bookId) => {
+        if (!isLoggedIn) {
+            alert("Anda harus login untuk menambahkan buku ke keranjang!");
+            return;
+        }
+        
+        // Panggil fungsi global addToCart dari CartContext
+        addToCart(bookId, 1); 
+    };
+
+
+    // [PERBAIKAN 5] useEffect untuk Fetching Data
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             setError(null);
             try {
+                // [PERBAIKAN 6] Gunakan API client terpusat (api)
                 const [latestBooksResponse, recommendedBooksResponse, categoriesResponse] = await Promise.all([
-                    axios.get('http://localhost:8000/api/books?limit=12'),
-                    axios.get('http://localhost:8000/api/books?limit=10&sort=popular'),
-                    axios.get('http://localhost:8000/api/categories')
+                    api.get('/books?limit=12'), // Ganti axios.get
+                    api.get('/books?limit=10&sort=popular'), // Ganti axios.get
+                    api.get('/categories') // Ganti axios.get
                 ]);
 
-                setLatestBooks(latestBooksResponse.data.data || latestBooksResponse.data);
-                setRecommendedBooks(recommendedBooksResponse.data.data || recommendedBooksResponse.data);
-                setCategories(categoriesResponse.data.data || categoriesResponse.data);
+                // Pastikan data diambil dari response.data.data
+                setLatestBooks(latestBooksResponse.data.data || []);
+                setRecommendedBooks(recommendedBooksResponse.data.data || []);
+                setCategories(categoriesResponse.data.data || []);
 
             } catch (err) {
-                console.error("Error fetching homepage data:", err);
+                console.error("Error fetching homepage data:", err.response || err);
                 setError('Gagal memuat data. Pastikan backend berjalan dan endpoint tersedia.');
             } finally {
                 setLoading(false);
@@ -93,7 +121,7 @@ export default function HomePage() {
 
     return (
         <div className="bg-gray-50 min-h-[calc(100vh-16rem)]">
-            {/* Promo Banners */}
+            {/* Promo Banners (Sama) */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div className="grid md:grid-cols-2 gap-4">
                     {banners.map((banner, index) => (
@@ -110,7 +138,7 @@ export default function HomePage() {
                 </div>
             </div>
 
-            {/* BAGIAN KATEGORI (Carousel) */}
+            {/* BAGIAN KATEGORI (Sama) */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-3">
                     Jelajahi Kategori
@@ -141,7 +169,7 @@ export default function HomePage() {
                 )}
             </div>
 
-            {/* BAGIAN BUKU REKOMENDASI (Carousel) */}
+            {/* BAGIAN BUKU REKOMENDASI */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-3">
                     Rekomendasi Buku
@@ -160,9 +188,10 @@ export default function HomePage() {
                         }}
                         className="mySwiper"
                     >
+                        {/* [PERBAIKAN 7] Pasang handler ke BookCard */}
                         {recommendedBooks.map(book => (
                             <SwiperSlide key={book.id} className="py-1">
-                                <BookCard book={book} />
+                                <BookCard book={book} onAddToCart={handleAddToCart} /> 
                             </SwiperSlide>
                         ))}
                     </Swiper>
@@ -171,7 +200,7 @@ export default function HomePage() {
                 )}
             </div>
 
-            {/* BAGIAN BUKU TERBARU (Grid Biasa) */}
+            {/* BAGIAN BUKU TERBARU */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="flex items-center justify-between mb-6 border-b pb-3">
                     <h2 className="text-2xl font-bold text-gray-800">Buku Terbaru</h2>
@@ -181,8 +210,9 @@ export default function HomePage() {
                 </div>
                 {latestBooks.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        {/* [PERBAIKAN 7] Pasang handler ke BookCard */}
                         {latestBooks.map((book) => (
-                            <BookCard key={book.id} book={book} />
+                            <BookCard key={book.id} book={book} onAddToCart={handleAddToCart} />
                         ))}
                     </div>
                 ) : (
@@ -190,7 +220,7 @@ export default function HomePage() {
                 )}
             </div>
 
-            {/* Info Section */}
+            {/* Info Section (Sama) */}
             <div className="bg-white border-t border-b py-8 mt-8">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid md:grid-cols-3 gap-8 text-center">
