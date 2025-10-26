@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 // [PERBAIKAN 1] Ganti axios dengan API client terpusat
-import { apiPublic as api } from "../api/axios"; // ganti dari { api } atau default
+import { apiPublic as api } from "../api/axios";
 // Import lucide-react icons (sudah ada)
 import { BookOpen, Tag, Award, Bookmark, Layers, Monitor, Loader2 } from 'lucide-react';
 

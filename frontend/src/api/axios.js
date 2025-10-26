@@ -2,24 +2,17 @@
 
 import axios from "axios";
 
-const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+const baseURL =
+  import.meta.env.VITE_API_URL ||
+  "http://127.0.0.1:8000/api"; // fallback aman
 
-// Instance tanpa token (untuk login, register, dll)
+const apiAuth = axios.create({ baseURL });
 const apiPublic = axios.create({ baseURL });
 
-// Instance dengan token (untuk endpoint terproteksi)
-const apiAuth = axios.create({ baseURL });
-
 export const setAuthToken = (token) => {
-  if (token) {
-    apiAuth.defaults.headers.common.Authorization = `Bearer ${token}`;
-  } else {
-    delete apiAuth.defaults.headers.common.Authorization;
-  }
+  if (token) apiAuth.defaults.headers.common.Authorization = `Bearer ${token}`;
+  else delete apiAuth.defaults.headers.common.Authorization;
 };
 
-// Export keduanya untuk kompatibilitas
 export { apiPublic, apiAuth };
-
-// Default export → banyak file impor "api" default
 export default apiAuth;

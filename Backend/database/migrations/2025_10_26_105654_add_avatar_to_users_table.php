@@ -11,10 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            // Tambahkan kolom avatar setelah kolom email
-            $table->string('avatar')->nullable()->after('email');
-        });
+        if (!Schema::hasColumn('users', 'avatar')) {
+            Schema::table('users', function (Blueprint $table) {
+                // Tambahkan kolom avatar setelah kolom email
+                $table->string('avatar')->nullable()->after('email');
+            });
+        }
     }
 
     /**
@@ -22,9 +24,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            // Hapus kolom avatar jika di-rollback
-            $table->dropColumn('avatar');
-        });
+        if (Schema::hasColumn('users', 'avatar')) {
+            Schema::table('users', function (Blueprint $table) {
+                // Hapus kolom avatar jika di-rollback
+                $table->dropColumn('avatar');
+            });
+        }
     }
 };

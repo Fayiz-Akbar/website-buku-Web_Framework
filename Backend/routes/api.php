@@ -4,20 +4,15 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Import Semua Controller (Kita standarkan semua di 'Api' Namespace)
-|--------------------------------------------------------------------------
-*/
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\BookController;
-use App\Http\Controllers\Api\CheckoutController;
-use App\Http\Controllers\Api\CategoryController;
-use App\Http\Controllers\Api\AuthorController;
-use App\Http\Controllers\Api\PublisherController;
-use App\Http\Controllers\Api\AdminOrderController;
-use App\Http\Controllers\Api\CartController;
-use App\Http\Controllers\Api\UserAddressController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BookController;
+use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\AuthorController;
+use App\Http\Controllers\PublisherController;
+use App\Http\Controllers\AdminOrderController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\UserAddressController;
 use App\Http\Controllers\ProfileController;
 
 /*
@@ -31,8 +26,10 @@ Route::post('/login', [AuthController::class, 'login']);
 
 // Read-Only Buku
 Route::get('/books', [BookController::class, 'index']); // Daftar buku
-Route::get('/books/{id}', [BookController::class, 'show']); // Detail buku
+Route::get('/books/{book}', [BookController::class, 'show']); // ganti {id} -> {book} // Detail buku
 Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/categories/{id}', [CategoryController::class, 'show']);
+Route::get('/categories/{id}/books', [BookController::class, 'byCategory']); // opsional
 
 /*
 |--------------------------------------------------------------------------
@@ -44,26 +41,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Ambil data user saat ini
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
+    Route::get('/user', fn (Request $r) => $r->user());
 
     // Update profil user (nama, alamat, foto profil)
     Route::put('/user/profile', [AuthController::class, 'updateProfile']);
 
     // Update password user
     Route::post('/user/password', [AuthController::class, 'updatePassword']);
-
-    // Alamat pengguna
-    Route::get('/user/addresses', [UserAddressController::class, 'index']);
-    Route::post('/user/addresses', [UserAddressController::class, 'store']);
-    Route::put('/user/addresses/{id}', [UserAddressController::class, 'update']);
-    Route::delete('/user/addresses/{id}', [UserAddressController::class, 'destroy']);
-    Route::put('/user/addresses/{id}/primary', [UserAddressController::class, 'setPrimary']);
-
-    // Alur Checkout
-    Route::post('/checkout', [CheckoutController::class, 'store']);
-    Route::post('/checkout', [CheckoutController::class, 'processCheckout']);
 
     // Cart
     Route::get('/cart', [CartController::class, 'index']);
@@ -75,6 +59,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/profile/photo', [ProfileController::class, 'updatePhoto']);
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::get('/me', [ProfileController::class, 'me']);
+
+    
+    // 📦 Manajemen alamat pengguna
+    Route::get('/user/addresses', [UserAddressController::class, 'index']); // Ambil semua alamat
+    Route::post('/user/addresses', [UserAddressController::class, 'store']); // Tambah alamat baru
+    Route::get('/user/addresses/{id}', [UserAddressController::class, 'show']); // Detail alamat
+    Route::put('/user/addresses/{id}', [UserAddressController::class, 'update']); // Update alamat
+    Route::delete('/user/addresses/{id}', [UserAddressController::class, 'destroy']); // Hapus alamat
+    Route::put('/user/addresses/{id}/primary', [UserAddressController::class, 'setPrimary']); // Set alamat utama
 });
 
 /*
