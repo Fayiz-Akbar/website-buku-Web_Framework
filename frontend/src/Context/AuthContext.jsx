@@ -4,8 +4,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 export const AuthContext = createContext(null); // sediakan named export juga
-
-const AuthContext = createContext();
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -81,6 +80,10 @@ export const AuthProvider = ({ children }) => {
         delete axios.defaults.headers.common['Authorization'];
     };
 
+    const updateUser = (updatedUserData) => {
+      setUser(updatedUserData);
+    };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -95,5 +98,9 @@ export const AuthProvider = ({ children }) => {
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }
