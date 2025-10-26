@@ -1,7 +1,8 @@
+// Path: frontend/src/pages/HomePage.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Star, Heart, BookOpen, Tag, Award, Bookmark, Layers, Monitor } from 'lucide-react'; // Tambah ikon untuk kategori
+import { BookOpen, Tag, Award, Bookmark, Layers, Monitor, Loader2 } from 'lucide-react';
 
 // Import Swiper React components dan modulnya
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -12,23 +13,24 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
+// --- IMPORT DARI FILE TERPISAH ---
+import BookCard from '../components/Layout/BookCard'; 
+
 // --- Komponen Kartu Kategori ---
-// Komponen baru untuk menampilkan kategori dengan ikon
 function CategoryCard({ category }) {
-    // Mapping ikon untuk kategori tertentu (bisa disesuaikan atau diambil dari API)
     const getCategoryIcon = (categoryName) => {
         switch (categoryName.toLowerCase()) {
             case 'fiksi': return <BookOpen className="w-10 h-10 text-blue-600 group-hover:text-white" />;
             case 'non-fiksi': return <Tag className="w-10 h-10 text-blue-600 group-hover:text-white" />;
             case 'bisnis & ekonomi': return <Award className="w-10 h-10 text-blue-600 group-hover:text-white" />;
             case 'komputer & teknologi': return <Monitor className="w-10 h-10 text-blue-600 group-hover:text-white" />;
-            default: return <Bookmark className="w-10 h-10 text-blue-600 group-hover:text-white" />; // Default ikon
+            default: return <Bookmark className="w-10 h-10 text-blue-600 group-hover:text-white" />;
         }
     };
 
     return (
         <Link
-            to={`/category/${category.id}`} // Nanti ini akan ke halaman filter
+            to={`/category/${category.id}`} 
             className="flex flex-col items-center justify-center flex-shrink-0 w-32 h-32 p-4 bg-white rounded-lg shadow-md text-center group hover:bg-blue-600 hover:shadow-lg transition-all duration-300"
         >
             {getCategoryIcon(category.name)}
@@ -39,108 +41,22 @@ function CategoryCard({ category }) {
     );
 }
 
-// --- Komponen Kartu Buku (Versi Profesional) ---
-function BookCard({ book }) {
-    const [isFavorite, setIsFavorite] = useState(false);
-
-    const formatRupiah = (number) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0
-        }).format(number);
-    };
-
-    const authorName = book.authors && book.authors.length > 0
-        ? book.authors[0].full_name
-        : 'Penulis';
-
-    const discount = book.original_price ? Math.round(((book.original_price - book.price) / book.original_price) * 100) : 0;
-
-    const handleAddToCart = (e) => {
-        e.preventDefault();
-        alert(`"${book.title}" ditambahkan ke keranjang! (Fitur segera hadir)`);
-    };
-
-    const handleToggleFavorite = (e) => {
-        e.preventDefault();
-        setIsFavorite(!isFavorite);
-    };
-
-    return (
-        <Link to={`/books/${book.id}`} className="bg-white border rounded-lg overflow-hidden hover:shadow-lg transition-shadow group">
-            <div className="relative overflow-hidden bg-gray-50">
-                <img
-                    src={book.cover_image_url || `https://placehold.co/300x400/e2e8f0/64748b?text=${book.title.split(' ').slice(0,3).join('+')}`}
-                    alt={book.title}
-                    className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                {discount > 0 && (
-                    <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
-                        {discount}%
-                    </div>
-                )}
-                <button
-                    onClick={handleToggleFavorite}
-                    className="absolute top-2 right-2 p-1.5 bg-white rounded-full shadow hover:bg-red-50"
-                >
-                    <Heart className={`w-5 h-5 ${isFavorite ? 'text-red-500 fill-current' : 'text-gray-500'}`} />
-                </button>
-            </div>
-
-            <div className="p-3">
-                <h3 className="font-semibold text-sm mb-1 text-gray-800 line-clamp-2 h-10">
-                    {book.title}
-                </h3>
-                <p className="text-gray-600 text-xs mb-2 truncate">{authorName}</p>
-
-                <div className="flex items-center mb-2 text-xs">
-                    <div className="flex items-center text-yellow-500">
-                        <Star className="w-3 h-3 fill-current" />
-                        <span className="ml-1 text-gray-700 font-semibold">4.8</span>
-                    </div>
-                    <span className="text-gray-400 ml-1">(120)</span>
-                </div>
-
-                <div className="mb-3">
-                    {book.original_price > 0 && (
-                        <div className="text-gray-400 text-xs line-through">
-                            {formatRupiah(book.original_price)}
-                        </div>
-                    )}
-                    <div className="text-blue-700 font-bold text-base">
-                        {formatRupiah(book.price)}
-                    </div>
-                </div>
-
-                <button
-                    onClick={handleAddToCart}
-                    className="w-full bg-blue-600 text-white py-2 text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
-                >
-                    + Keranjang
-                </button>
-            </div>
-        </Link>
-    );
-}
-
 // --- Komponen Halaman Utama (Konten) ---
 export default function HomePage() {
     const [latestBooks, setLatestBooks] = useState([]);
-    const [recommendedBooks, setRecommendedBooks] = useState([]); // State baru untuk rekomendasi
-    const [categories, setCategories] = useState([]); // State baru untuk kategori
+    const [recommendedBooks, setRecommendedBooks] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Ambil semua data yang dibutuhkan secara paralel
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             setError(null);
             try {
                 const [latestBooksResponse, recommendedBooksResponse, categoriesResponse] = await Promise.all([
-                    axios.get('http://localhost:8000/api/books?limit=12'), // Buku terbaru
-                    axios.get('http://localhost:8000/api/books?limit=10&sort=popular'), // Asumsi ada API untuk buku populer/rekomendasi
+                    axios.get('http://localhost:8000/api/books?limit=12'),
+                    axios.get('http://localhost:8000/api/books?limit=10&sort=popular'),
                     axios.get('http://localhost:8000/api/categories')
                 ]);
 
@@ -158,14 +74,17 @@ export default function HomePage() {
         fetchData();
     }, []);
 
-    // Promo Banners
     const banners = [
         { title: "Diskon Hingga 50%", subtitle: "Untuk Buku Pilihan", bg: "bg-blue-600" },
         { title: "Gratis Ongkir", subtitle: "Min. Belanja Rp 100.000", bg: "bg-green-600" }
     ];
 
     if (loading) {
-        return <div className="text-center p-20 text-xl font-semibold">Loading...</div>;
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+            </div>
+        );
     }
 
     if (error) {
@@ -173,7 +92,7 @@ export default function HomePage() {
     }
 
     return (
-        <div className="bg-gray-50 min-h-[calc(100vh-16rem)]"> {/* Min-height agar footer tetap di bawah */}
+        <div className="bg-gray-50 min-h-[calc(100vh-16rem)]">
             {/* Promo Banners */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div className="grid md:grid-cols-2 gap-4">
@@ -191,7 +110,7 @@ export default function HomePage() {
                 </div>
             </div>
 
-            {/* --- BAGIAN KATEGORI (Carousel) --- */}
+            {/* BAGIAN KATEGORI (Carousel) */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-3">
                     Jelajahi Kategori
@@ -212,7 +131,7 @@ export default function HomePage() {
                         className="mySwiper"
                     >
                         {categories.map(category => (
-                            <SwiperSlide key={category.id} className="py-5"> {/* Padding vertikal untuk pagination */}
+                            <SwiperSlide key={category.id} className="py-5">
                                 <CategoryCard category={category} />
                             </SwiperSlide>
                         ))}
@@ -222,7 +141,7 @@ export default function HomePage() {
                 )}
             </div>
 
-            {/* --- BAGIAN BUKU REKOMENDASI (Carousel) --- */}
+            {/* BAGIAN BUKU REKOMENDASI (Carousel) */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-3">
                     Rekomendasi Buku
@@ -252,7 +171,7 @@ export default function HomePage() {
                 )}
             </div>
 
-            {/* --- BAGIAN BUKU TERBARU (Grid Biasa) --- */}
+            {/* BAGIAN BUKU TERBARU (Grid Biasa) */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="flex items-center justify-between mb-6 border-b pb-3">
                     <h2 className="text-2xl font-bold text-gray-800">Buku Terbaru</h2>
@@ -296,4 +215,3 @@ export default function HomePage() {
         </div>
     );
 }
-

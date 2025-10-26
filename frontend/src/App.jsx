@@ -1,26 +1,26 @@
+// Path: frontend/src/App.jsx
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 
 // Layouts
-import AdminLayout from './components/Layout/AdminLayout'; // Layout Admin Anda
-import UserLayout from './components/Layout/UserLayout';   // Layout User BARU Anda
+import AdminLayout from './components/Layout/AdminLayout';
+import UserLayout from './components/Layout/UserLayout';
 
 // Routes
-import AuthGuard from './components/Layout/AuthGuard';     // Pelindung route admin
-import GuestRoute from './components/Layout/GuestRoute';   // Pelindung route login/register
+import AuthGuard from './components/Layout/AuthGuard';
+import GuestRoute from './components/Layout/GuestRoute';
 
 // Halaman Publik / User
 import HomePage from './pages/HomePage';
-import LoginPage from './pages/Shared/LoginPage';       // Sesuaikan path jika beda
-import RegisterPage from './pages/Register/RegisterPage'; // Sesuaikan path jika beda
-// import BookDetailPage from './pages/BookDetailPage'; // (Contoh halaman detail)
-// import CartPage from './pages/CartPage';         // (Contoh halaman keranjang)
+import LoginPage from './pages/Shared/LoginPage';
+import RegisterPage from './pages/Register/RegisterPage';
+import BookCatalogPage from './pages/BookCatalogPage.jsx'; // <-- Sekarang file ini ada
 
 // Halaman Admin
 import DashboardPage from './pages/DashboardPage';
 import BookListPage from './pages/Books/BookListPage';
 import BookFormPage from './pages/Books/BookFormPage';
-import CategoryListPage from './pages/Categories/CategoryListPage';
+import CategoryListPage from './pages/Categories/CategoryListPage'; 
 import CategoryFormPage from './pages/Categories/CategoryFormPage';
 import AuthorListPage from './pages/Authors/AuthorListPage';
 import AuthorFormPage from './pages/Authors/AuthorFormPage';
@@ -38,16 +38,15 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
       </Route>
       
-      {/* Rute Publik / User (Menggunakan UserLayout BARU) */}
+      {/* Rute Publik / User (Menggunakan UserLayout) */}
       <Route path="/" element={<UserLayout />}>
         <Route index element={<HomePage />} />
-        {/* Tambahkan rute user lain di sini */}
+        <Route path="/books" element={<BookCatalogPage />} /> {/* <-- Route baru */}
         {/* <Route path="/books/:id" element={<BookDetailPage />} /> */}
-        {/* <Route path="/cart" element={<CartPage />} /> */}
         {/* <Route path="/profile" element={<ProfilePage />} /> */}
       </Route>
 
-      {/* Rute Admin (Menggunakan AdminLayout LAMA Anda) */}
+      {/* Rute Admin (Menggunakan AdminLayout) */}
       <Route 
         path="/" 
         element={
