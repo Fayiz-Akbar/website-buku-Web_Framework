@@ -1,3 +1,5 @@
+// frontend/src/components/Layout/UserLayout.jsx
+
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import {
@@ -17,12 +19,18 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "../../Context/AuthContext";
+// --- (1) IMPORT useCart ---
+import { useCart } from "../../Context/CartContext";
 
 export default function UserLayout() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const { user, logout, isLoggedIn } = useAuth();
+  
+  // --- (2) AMBIL cartCount ---
+  const { cartCount } = useCart();
+  
   const navigate = useNavigate();
 
   // Ambil kategori dari API
@@ -155,14 +163,25 @@ export default function UserLayout() {
               <span className="text-xs mt-1">Favorit</span>
             </Link>
 
-            {/* Keranjang */}
+            {/* --- (3) TOMBOL KERANJANG DIPERBARUI --- */}
             <button
-              onClick={() => alert("Fitur keranjang sedang dikembangkan")}
-              className="flex flex-col items-center text-gray-700 hover:text-blue-600"
+              onClick={() => navigate('/cart')} // Ganti alert dengan navigate
+              className="flex flex-col items-center text-gray-700 hover:text-blue-600 relative" // Tambahkan 'relative'
             >
               <ShoppingCart className="w-6 h-6" />
               <span className="text-xs mt-1">Keranjang</span>
+              
+              {/* --- (4) BADGE NOTIFIKASI --- */}
+              {isLoggedIn && cartCount > 0 && (
+                <span className="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                  {cartCount > 9 ? '9+' : cartCount}
+                </span>
+              )}
+              {/* --- Batas Badge --- */}
+              
             </button>
+            {/* --- Batas Perbaikan --- */}
+
 
             {/* Menu Mobile */}
             <button

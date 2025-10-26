@@ -1,21 +1,28 @@
 // File: frontend/src/pages/CheckoutPage.jsx
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+// (1) Import useLocation untuk menerima 'state' dari navigate
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useCart } from '../Context/CartContext';
 import { useAuth } from '../Context/AuthContext';
-import { apiAuth } from '../api/axios'; // Import client terotentikasi
+// (Saya asumsikan apiAuth ada di '../api/axios', sesuaikan jika beda)
+import { apiAuth } from '../api/axios'; 
 
 export default function CheckoutPage() {
     const navigate = useNavigate();
     const { user } = useAuth();
+    // (2) Ambil SEMUA cartItems dari context
     const { cartItems, loading: loadingCart, processCheckout } = useCart();
+    
+    // (3) Ambil 'state' yang dikirim dari CartPage
+    const location = useLocation();
+    const itemIdsFromCart = location.state?.items; // Ini adalah array [id1, id2, ...]
 
     // States untuk data Checkout
     const [userAddresses, setUserAddresses] = useState([]);
     const [selectedAddressId, setSelectedAddressId] = useState('');
     const [amountPaid, setAmountPaid] = useState('');
-    const [paymentProof, setPaymentProof] = useState(null); // State untuk file
+    const [paymentProof, setPaymentProof] = useState(null); 
     
     // States untuk UI
     const [loadingAddresses, setLoadingAddresses] = useState(true);
@@ -23,27 +30,43 @@ export default function CheckoutPage() {
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
 
-    // Hitung Subtotal
-    const subtotal = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-    const totalAmount = subtotal; // Untuk saat ini, total sama dengan subtotal
+    // --- (4) PERUBAHAN BESAR: Hitung item dan subtotal HANYA untuk item terpilih ---
+    const { itemsToCheckout, subtotal } = useMemo(() => {
+        // Jika tidak ada data ID dari cart, atau cartItems belum load
+        if (!itemIdsFromCart || !cartItems) {
+            return { itemsToCheckout: [], subtotal: 0 };
+        }
+        
+        // Filter cartItems berdasarkan ID yang dikirim dari location.state
+        const filteredItems = cartItems.filter(item => 
+            itemIdsFromCart.includes(item.id)
+        );
+          
+        // Hitung subtotal HANYA dari item yang difilter
+        const newSubtotal = filteredItems.reduce(
+            (total, item) => total + item.price * item.quantity, 0
+        );
+          
+        return { itemsToCheckout: filteredItems, subtotal: newSubtotal };
 
-    // Effect untuk memuat Alamat User
+    }, [cartItems, itemIdsFromCart]); // <-- Kalkulasi ulang jika data berubah
+    // --- Batas Perubahan ---
+
+    const totalAmount = subtotal; // Total = subtotal (belum ada ongkir/pajak)
+
+    // Effect untuk memuat Alamat User (Tidak berubah, sudah benar)
     useEffect(() => {
         const fetchAddresses = async () => {
-            if (!user) return; // Tunggu user dimuat
-
+            if (!user) return; 
             try {
-                // [ASUMSI API] Endpoint untuk mengambil alamat user yang terotentikasi
                 const response = await apiAuth.get('/user/addresses'); 
                 const addresses = response.data.data;
                 setUserAddresses(addresses);
                 
-                // Set alamat utama/pertama sebagai default yang dipilih
                 const primary = addresses.find(addr => addr.is_primary) || addresses[0];
                 if (primary) {
                     setSelectedAddressId(primary.id);
                 }
-
             } catch (err) {
                 console.error("Gagal memuat alamat:", err);
                 setError("Gagal memuat alamat pengiriman. Silakan coba lagi.");
@@ -52,21 +75,28 @@ export default function CheckoutPage() {
             }
         };
 
-        if (userAddresses.length === 0) {
+        // (Perbaikan kecil: Cukup cek 'user' saja)
+        if (user && userAddresses.length === 0) {
             fetchAddresses();
         }
-    }, [user, userAddresses.length]);
+    }, [user]); // <-- Dependency array disederhanakan
 
-    // Redirect jika keranjang kosong
-    if (!loadingCart && cartItems.length === 0) {
+    // --- (5) PERUBAHAN: Redirect jika item *terpilih* kosong ---
+    // (Ini juga menangani kasus jika user akses /checkout langsung tanpa state)
+    if (!loadingCart && itemsToCheckout.length === 0) {
         return (
             <div className="container mx-auto p-4 text-center mt-12">
-                <p className="text-xl">Keranjang Anda kosong! <Link to="/" className="text-blue-600 hover:underline">Ayo belanja.</Link></p>
+                <p className="text-xl">Tidak ada item yang dipilih untuk dicheckout.</p>
+                <p>
+                    <Link to="/cart" className="text-blue-600 hover:underline">Kembali ke Keranjang</Link>
+                    {' atau '}
+                    <Link to="/" className="text-blue-600 hover:underline">Ayo belanja.</Link>
+                </p>
             </div>
         );
     }
     
-    // Tampilan Loading
+    // Tampilan Loading (Sudah Benar)
     if (loadingCart || loadingAddresses || !user) {
         return <div className="container mx-auto p-4 text-center mt-12">Memuat Checkout...</div>;
     }
@@ -83,32 +113,52 @@ export default function CheckoutPage() {
             setIsSubmitting(false);
             return;
         }
+
+        // Validasi jumlah bayar (opsional tapi bagus)
+        if (parseFloat(amountPaid) < totalAmount) {
+            setError(`Jumlah bayar minimum adalah Rp ${new Intl.NumberFormat('id-ID').format(totalAmount)}`);
+            setIsSubmitting(false);
+            return;
+        }
         
-        // 1. Buat instance FormData untuk file upload
         const formData = new FormData();
         formData.append('user_address_id', selectedAddressId);
         formData.append('amount_paid', amountPaid);
-        formData.append('payment_proof', paymentProof); // File harus dimasukkan sebagai object file
+        formData.append('payment_proof', paymentProof);
+
+        // --- (6) PERUBAHAN PENTING: Kirim ID item yang dipilih ke backend ---
+        // Backend perlu tahu item mana saja yang di-checkout
+        itemsToCheckout.forEach(item => {
+            // Kita kirim sebagai array 'items[]'
+            formData.append('items[]', item.id);
+        });
+        // --- Batas Perubahan ---
 
         try {
-            // 2. Panggil fungsi checkout dari CartContext
+            // Asumsi: processCheckout(formData) akan POST ke '/api/checkout'
             const response = await processCheckout(formData); 
             
-            // 3. Sukses
             setSuccess(`Pemesanan berhasil dengan Kode Order: ${response.order_id}! Silakan tunggu konfirmasi admin.`);
-            // Redirect ke halaman detail order (jika ada) atau halaman sukses
+            
+            // Tunda navigasi agar user bisa baca pesan sukses
             setTimeout(() => {
-                navigate(`/profile/orders/${response.order_id}`); 
-            }, 5000);
+                // Arahkan ke halaman detail order (jika ada)
+                navigate(`/profile/orders`); // (Atau ganti ke /profile/orders/${response.order_id} jika halaman itu ada)
+            }, 3000);
 
         } catch (err) {
-            setError(err.message || "Checkout gagal. Silakan cek data Anda.");
+            // Tangkap error validasi dari backend (jika ada)
+            if (err.response && err.response.status === 422) {
+                 setError("Checkout gagal: " + err.response.data.message);
+            } else {
+                setError(err.message || "Checkout gagal. Silakan cek data Anda.");
+            }
         } finally {
             setIsSubmitting(false);
         }
     };
     
-    // Tampilan Alamat Kosong
+    // Tampilan Alamat Kosong (Sudah Benar)
     if (userAddresses.length === 0) {
         return (
             <div className="container mx-auto p-4 text-center mt-12">
@@ -129,7 +179,7 @@ export default function CheckoutPage() {
                 
                 {/* Kolom Kiri: Alamat & Pembayaran */}
                 <form onSubmit={handleSubmit} className="lg:w-2/3 space-y-6">
-                    {/* Alamat Pengiriman */}
+                    {/* Alamat Pengiriman (Tidak berubah, sudah benar) */}
                     <div className="bg-white p-6 rounded-lg shadow-md border border-blue-100">
                         <h2 className="text-xl font-semibold mb-4 text-blue-700">1. Alamat Pengiriman</h2>
                         <div className="space-y-3">
@@ -157,14 +207,12 @@ export default function CheckoutPage() {
                         </div>
                     </div>
 
-                    {/* Pembayaran QRIS */}
+                    {/* Pembayaran QRIS (Tidak berubah, sudah benar) */}
                     <div className="bg-white p-6 rounded-lg shadow-md border border-green-100">
                         <h2 className="text-xl font-semibold mb-4 text-green-700">2. Pembayaran (QRIS Manual)</h2>
                         <div className="mb-4">
                             <p className="text-lg font-bold text-gray-800 mb-3">Total Pembayaran: <span className="text-red-600">Rp {new Intl.NumberFormat('id-ID').format(totalAmount)}</span></p>
                         </div>
-
-                        {/* Input Jumlah Bayar */}
                         <div className="mb-4">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Jumlah yang Anda Bayar (Wajib Diisi)
@@ -179,8 +227,6 @@ export default function CheckoutPage() {
                                 required
                             />
                         </div>
-
-                        {/* Input Bukti Pembayaran */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Upload Bukti Pembayaran (JPG/PNG/JPEG)
@@ -196,26 +242,27 @@ export default function CheckoutPage() {
                         </div>
                     </div>
                     
-                    {/* Pesan Status */}
+                    {/* Pesan Status (Tidak berubah, sudah benar) */}
                     {error && <div className="p-3 text-sm text-red-700 bg-red-100 rounded-lg">{error}</div>}
                     {success && <div className="p-3 text-sm text-green-700 bg-green-100 rounded-lg">{success}</div>}
 
-                    {/* Tombol Submit Final */}
+                    {/* Tombol Submit Final (Sudah Benar) */}
                     <button
                         type="submit"
-                        disabled={isSubmitting || !selectedAddressId || !paymentProof || !amountPaid}
+                        disabled={isSubmitting || !selectedAddressId || !paymentProof || !amountPaid || success}
                         className="w-full px-4 py-3 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 font-bold transition disabled:bg-gray-400"
                     >
                         {isSubmitting ? 'Memproses Pesanan...' : `Konfirmasi Pembayaran Rp ${new Intl.NumberFormat('id-ID').format(totalAmount)}`}
                     </button>
                 </form>
 
-                {/* Kolom Kanan: Ringkasan Keranjang */}
+                {/* --- (7) PERUBAHAN: Ringkasan Keranjang --- */}
                 <div className="lg:w-1/3">
                     <div className="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
-                        <h2 className="text-2xl font-bold mb-4 border-b pb-2">Ringkasan Keranjang</h2>
+                        <h2 className="text-2xl font-bold mb-4 border-b pb-2">Ringkasan Pesanan</h2>
                         
-                        {cartItems.map(item => (
+                        {/* (8) Tampilkan HANYA item yang dicheckout */}
+                        {itemsToCheckout.map(item => (
                             <div key={item.id} className="flex justify-between items-start mb-3 border-b border-dashed pb-2">
                                 <p className="text-sm text-gray-700 pr-2">{item.quantity}x {item.book.title}</p>
                                 <span className="text-sm font-medium text-gray-800 whitespace-nowrap">
@@ -224,6 +271,7 @@ export default function CheckoutPage() {
                             </div>
                         ))}
 
+                        {/* (9) Tampilkan 'totalAmount' (yang sudah dihitung dari item terpilih) */}
                         <div className="flex justify-between text-xl font-bold mb-6 pt-4">
                             <span>Total Tagihan</span>
                             <span className="text-indigo-600">Rp{new Intl.NumberFormat('id-ID').format(totalAmount)}</span>
