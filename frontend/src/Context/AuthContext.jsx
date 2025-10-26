@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { apiAuth } from '../api/axios';
 
 const API_URL = 'http://localhost:8000/api'; 
 
@@ -9,22 +10,21 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [token, setToken] = useState(localStorage.getItem('token') || null);
+    const [token, setToken] = useState(localStorage.getItem('access_token') || null); 
     const [loading, setLoading] = useState(true); 
 
     useEffect(() => {
         if (token) {
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            axios.get(`${API_URL}/user`) 
+            apiAuth.get(`/user`) 
                 .then(response => {
+                    // Jika token valid, user dimuat
                     setUser(response.data);
                 })
                 .catch(() => {
-                    // Token tidak valid, hapus
-                    localStorage.removeItem('token');
+                    // Token tidak valid, hapus semua
+                    localStorage.removeItem('access_token'); // [PERBAIKAN] Gunakan 'access_token'
                     setToken(null);
-                    setUser(null); // Pastikan user juga di-null-kan
-                    delete axios.defaults.headers.common['Authorization'];
+                    setUser(null); 
                 })
                 .finally(() => {
                     setLoading(false);
@@ -37,38 +37,30 @@ export const AuthProvider = ({ children }) => {
     // --- FUNGSI LOGIN YANG DIPERBAIKI ---
     const login = async (email, password) => {
         
-        // 1. Bungkus semua dengan try...catch
         try {
-            // Hapus header auth lama jika ada
-            delete axios.defaults.headers.common['Authorization'];
-            
-            // 2. Coba lakukan request login
+            // Gunakan axios standar (api) untuk request login
             const response = await axios.post(`${API_URL}/login`, { email, password });
 
-            // 3. Cek jika backend merespons DENGAN token dan user
             if (response.data && response.data.token && response.data.user) {
                 const { token: apiToken, user: apiUser } = response.data;
 
-                // 4. Simpan state
+                // [PERBAIKAN 3] Simpan token menggunakan 'access_token'
                 setToken(apiToken);
                 setUser(apiUser);
-                localStorage.setItem('token', apiToken);
-                axios.defaults.headers.common['Authorization'] = `Bearer ${apiToken}`;
+                localStorage.setItem('access_token', apiToken); 
                 
-                return apiUser; // Kembalikan user data ke LoginPage
+                // [PERBAIKAN 4] HAPUS SEMUA MANIPULASI global header (axios.defaults) dari sini
+                
+                return apiUser; 
             } else {
-                // Seharusnya tidak terjadi, tapi jika backend 200 OK tapi data aneh
                 throw new Error('Respons login tidak valid.');
             }
         } catch (error) {
-            // 5. Jika axios GAGAL (401, 422, 500)
             // Hapus token lama jika ada (jaga-jaga)
-            localStorage.removeItem('token');
+            localStorage.removeItem('access_token'); // [PERBAIKAN] Gunakan 'access_token'
             setToken(null);
             setUser(null);
-            delete axios.defaults.headers.common['Authorization'];
             
-            // 6. Lempar error ini kembali ke LoginPage.jsx agar bisa ditangani di sana
             throw error; 
         }
     };
@@ -77,8 +69,7 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         setUser(null);
         setToken(null);
-        localStorage.removeItem('token');
-        delete axios.defaults.headers.common['Authorization'];
+        localStorage.removeItem('access_token');
     };
 
     if (loading) {

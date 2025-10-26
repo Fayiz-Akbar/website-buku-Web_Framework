@@ -11,7 +11,7 @@ export const CartProvider = ({ children }) => {
     const [cartCount, setCartCount] = useState(0); 
     const [loading, setLoading] = useState(true); 
     const [error, setError] = useState(null);
-    const { isLoggedIn } = useAuth(); 
+    const { isLoggedIn, loading: authLoading } = useAuth();
 
     const fetchCart = async () => {
         if (!isLoggedIn) {
