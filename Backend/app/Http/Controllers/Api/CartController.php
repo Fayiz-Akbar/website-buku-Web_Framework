@@ -22,11 +22,12 @@ class CartController extends Controller
         $user = $request->user();
 
         // Dapatkan keranjangnya (atau buat baru jika tidak ada)
-        // Relasi 'cart' ada di Model User.php
         $cart = $user->cart()->firstOrCreate();
 
-        // Ambil semua item di keranjang itu, beserta data bukunya (eager loading)
-        $cartItems = $cart->items()->with('book')->get();
+        // --- PERBAIKAN DI SINI ---
+        // Ambil item keranjang, beserta data buku DAN data penulis buku (book.authors)
+        $cartItems = $cart->items()->with('book.authors')->get();
+        // -------------------------
 
         return response()->json(['data' => $cartItems], 200);
     }
@@ -90,6 +91,5 @@ class CartController extends Controller
         ], 201); // 201 Created
     }
 
-    // ... (Kita akan implementasi 'removeBook' dan 'updateQuantity' nanti
-    //     jika diperlukan. Fokus kita sekarang adalah 'addBook'.)
+    // ... (Fungsi removeBook dan updateQuantity Anda)
 }

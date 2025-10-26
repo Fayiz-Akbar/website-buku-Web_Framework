@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../Context/AuthContext';
 import { MapPin, Plus, Trash2, Edit, CheckCircle, Loader2 } from 'lucide-react';
 import AddressForm from './AddressForm.jsx';
 

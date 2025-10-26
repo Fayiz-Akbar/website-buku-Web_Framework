@@ -1,11 +1,13 @@
 // frontend/src/pages/CartPage.jsx
 
+// (1) Ambil SEMUA import yang diperlukan dari kedua versi
 import React, { useEffect, useState, useMemo } from "react";
 import { useCart } from "../Context/CartContext";
-import { Link, useNavigate } from "react-router-dom"; // <-- (1) Import useNavigate
+import { Link, useNavigate } from "react-router-dom"; 
 import { Trash2, Plus, Minus } from "lucide-react";
 
 const CartPage = () => {
+  // (2) Ambil hooks dari versi HEAD (baru)
   const {
     cartItems,
     loading,
@@ -13,35 +15,31 @@ const CartPage = () => {
     updateQuantity,
   } = useCart();
   
-  const navigate = useNavigate(); // <-- (2) Inisialisasi navigate
+  const navigate = useNavigate(); 
 
-  // --- (3) STATE BARU UNTUK SELEKSI ITEM ---
-  // Format: { itemId1: true, itemId2: false, ... }
+  // (3) State untuk seleksi item (dari HEAD)
   const [selectedItems, setSelectedItems] = useState({});
 
-  // --- (4) EFEK UNTUK OTOMATIS MEMILIH SEMUA ITEM SAAT DATA DIMUAT ---
+  // (4) Efek untuk otomatis memilih semua item (dari HEAD)
   useEffect(() => {
-    // Saat cartItems selesai loading dan ada isinya
     if (cartItems.length > 0) {
       const initialSelection = {};
       cartItems.forEach(item => {
-        initialSelection[item.id] = true; // Set semua jadi true (tercentang)
+        initialSelection[item.id] = true; 
       });
       setSelectedItems(initialSelection);
     }
-  }, [cartItems]); // Dijalankan setiap kali cartItems berubah
+  }, [cartItems]); 
 
-  // --- (5) FUNGSI BARU UNTUK MENG-HANDLE CENTANG ---
-  
-  // Fungsi untuk centang/hapus centang satu item
+  // (5) Fungsi untuk handle centang (dari HEAD)
   const handleSelectItem = (itemId) => {
     setSelectedItems(prev => ({
       ...prev,
-      [itemId]: !prev[itemId] // Toggle nilai boolean
+      [itemId]: !prev[itemId] 
     }));
   };
 
-  // Fungsi untuk centang/hapus centang "Pilih Semua"
+  // Fungsi untuk centang/hapus centang "Pilih Semua" (dari HEAD)
   const handleSelectAll = (e) => {
     const isChecked = e.target.checked;
     const newSelection = {};
@@ -50,41 +48,27 @@ const CartPage = () => {
         newSelection[item.id] = true;
       });
     }
-    // Jika "Pilih Semua" di-uncheck, semua item jadi false (objek kosong)
     setSelectedItems(newSelection);
   };
 
-  // --- (6) PERHITUNGAN BARU DENGAN useMemo ---
-  // Perhitungan ini hanya akan berjalan ulang jika cartItems atau selectedItems berubah
+  // (6) Perhitungan baru dengan useMemo (dari HEAD)
   const { itemsToCheckout, selectedSubtotal, selectedCount, isAllSelected } = useMemo(() => {
-    // 1. Filter item yang ada di cart DAN terseleksi
     const itemsToCheckout = cartItems.filter(
       item => selectedItems[item.id]
     );
-
-    // 2. Hitung subtotal HANYA dari item yang terseleksi
     const selectedSubtotal = itemsToCheckout.reduce(
       (total, item) => total + item.price * item.quantity,
       0
     );
-
-    // 3. Hitung jumlah item yang terseleksi
     const selectedCount = itemsToCheckout.length;
-
-    // 4. Cek apakah status "Pilih Semua" harus aktif
-    // (Aktif jika jumlah item di keranjang > 0 DAN jumlah item terpilih == jumlah total item)
     const isAllSelected = cartItems.length > 0 && selectedCount === cartItems.length;
 
     return { itemsToCheckout, selectedSubtotal, selectedCount, isAllSelected };
   }, [cartItems, selectedItems]);
 
-
-  // --- (7) FUNGSI BARU UNTUK TOMBOL CHECKOUT ---
+  // (7) Fungsi untuk tombol checkout (dari HEAD)
   const handleCheckout = () => {
-    // Ambil ID dari item yang akan di-checkout
     const itemIdsToCheckout = itemsToCheckout.map(item => item.id);
-    
-    // Navigasi ke halaman checkout dan kirimkan state berisi ID item
     navigate('/checkout', { 
       state: { 
         items: itemIdsToCheckout 
@@ -92,13 +76,12 @@ const CartPage = () => {
     });
   };
 
-
-  // --- Tampilan Loading (Sudah Benar) ---
+  // Tampilan Loading (Sama)
   if (loading) {
     return <div className="container p-4 mx-auto text-center">Memuat Keranjang...</div>;
   }
 
-  // --- Tampilan Keranjang Kosong (Sudah Benar) ---
+  // Tampilan Keranjang Kosong (Sama)
   if (!loading && cartItems.length === 0) {
     return (
       <div className="container p-4 mx-auto text-center">
@@ -110,16 +93,16 @@ const CartPage = () => {
     );
   }
 
-  // --- Tampilan Utama ---
+  // (8) Tampilan Utama (Gabungan)
   return (
     <div className="container p-4 mx-auto">
       <h1 className="mb-6 text-3xl font-bold">Keranjang Belanja</h1>
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-        {/* --- (8) KONTEN UTAMA (KIRI) --- */}
+        {/* Konten Utama (Kiri) */}
         <div className="md:col-span-2">
           
-          {/* --- (9) HEADER "PILIH SEMUA" (BARU) --- */}
+          {/* Header "PILIH SEMUA" (dari HEAD) */}
           <div className="flex items-center p-4 mb-4 bg-white border border-gray-200 rounded-lg shadow-sm">
             <input
               type="checkbox"
@@ -133,36 +116,41 @@ const CartPage = () => {
             </label>
           </div>
 
-          {/* --- Daftar Item Keranjang --- */}
+          {/* Daftar Item Keranjang */}
           <div className="bg-white border border-gray-200 rounded-lg shadow-sm divide-y divide-gray-200">
             {cartItems.map((item) => (
               <div key={item.id} className="flex gap-4 p-4">
                 
-                {/* --- (10) CHECKBOX PER ITEM (BARU) --- */}
+                {/* CHECKBOX PER ITEM (dari HEAD) */}
                 <div className="flex items-center justify-center flex-shrink-0">
                   <input
                     type="checkbox"
                     className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    // Gunakan "|| false" untuk menghindari error "uncontrolled to controlled"
                     checked={selectedItems[item.id] || false}
                     onChange={() => handleSelectItem(item.id)}
                   />
                 </div>
                 
                 <img
-                  src={item.book.cover_image || 'https://via.placeholder.com/100x150?text=No+Cover'}
+                  // --- (FIX 1) Ambil perbaikan 'cover_url' dari '63ea050' ---
+                  src={item.book.cover_url || 'https://via.placeholder.com/100x150?text=No+Cover'} 
                   alt={item.book.title}
                   className="object-cover w-24 h-32 rounded"
+                  onError={(e) => { e.target.src = 'https://via.placeholder.com/100x150?text=Error'; }}
                 />
                 <div className="flex-1">
                   <h2 className="text-lg font-semibold">{item.book.title}</h2>
-                  <p className="text-sm text-gray-600">{item.book.authors.map(a => a.name).join(', ')}</p>
+                  <p className="text-sm text-gray-600">
+                    {/* (FIX 2) Ambil perbaikan optional chaining 'authors' dari '63ea050' */}
+                    {item.book.authors?.map(a => a.name || a.full_name).join(', ') || 'Penulis tidak diketahui'}
+                  </p>
                   <p className="mt-2 text-lg font-bold text-gray-800">
-                    Rp {item.price.toLocaleString("id-ID")}
+                    {/* (FIX 3) Ambil perbaikan format harga 'Number()' dari '63ea050' */}
+                    Rp {Number(item.price).toLocaleString("id-ID")}
                   </p>
                 </div>
                 <div className="flex flex-col items-end justify-between">
-                  {/* Tombol Kuantitas (Sudah Benar) */}
+                  {/* Tombol Kuantitas (Sama) */}
                   <div className="flex items-center border border-gray-300 rounded">
                     <button
                       onClick={() => updateQuantity(item.id, item.quantity - 1)}
@@ -179,7 +167,7 @@ const CartPage = () => {
                       <Plus size={16} />
                     </button>
                   </div>
-                  {/* Tombol Hapus (Sudah Benar) */}
+                  {/* Tombol Hapus (Sama) */}
                   <button
                     onClick={() => removeFromCart(item.id)}
                     className="text-red-500 hover:text-red-700"
@@ -193,17 +181,17 @@ const CartPage = () => {
           </div>
         </div>
 
-        {/* --- (11) RINGKASAN PESANAN (KANAN) - LOGIC DIPERBARUI --- */}
+        {/* RINGKASAN PESANAN (KANAN) - (dari HEAD) */}
         <div className="md:col-span-1">
           <div className="sticky top-24 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
             <h2 className="mb-4 text-2xl font-semibold">Ringkasan Pesanan</h2>
             <div className="flex justify-between mb-2">
               <span className="text-gray-600">
-                {/* --- (12) Gunakan 'selectedCount' --- */}
+                {/* Gunakan 'selectedCount' */}
                 Subtotal ({selectedCount} item)
               </span>
               <span className="font-semibold">
-                {/* --- (13) Gunakan 'selectedSubtotal' --- */}
+                {/* Gunakan 'selectedSubtotal' */}
                 Rp {selectedSubtotal.toLocaleString("id-ID")}
               </span>
             </div>
@@ -214,15 +202,14 @@ const CartPage = () => {
             <hr className="my-4" />
             <div className="flex justify-between text-xl font-bold">
               <span>Total</span>
-              {/* --- (14) Gunakan 'selectedSubtotal' --- */}
+              {/* Gunakan 'selectedSubtotal' */}
               <span>Rp {selectedSubtotal.toLocaleString("id-ID")}</span>
             </div>
             
-            {/* --- (15) TOMBOL CHECKOUT DIPERBARUI --- */}
+            {/* TOMBOL CHECKOUT (dari HEAD) */}
             <button
               onClick={handleCheckout}
               className="block w-full px-4 py-3 mt-6 font-semibold text-center text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              // Tombol disable jika tidak ada item terpilih
               disabled={selectedCount === 0}
             >
               Lanjut ke Checkout ({selectedCount})

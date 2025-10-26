@@ -4,15 +4,21 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Loader2, Star, Heart, ArrowLeft, Info, Users, Calendar, Layers, Bookmark } from 'lucide-react';
 import { useWishlist } from '../Context/WishlistContext';
-import { useCart } from '../Context/CartContext'; // <-- 1. IMPORT useCart
+import { useCart } from '../Context/CartContext';
 
 // Helper format Rupiah
 const formatRupiah = (number) => {
+    // Konversi ke angka jika dia string
+    const numericNumber = Number(number);
+    if (isNaN(numericNumber)) {
+        return 'Invalid Price';
+    }
+    
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',
         minimumFractionDigits: 0
-    }).format(number);
+    }).format(numericNumber);
 };
 
 export default function BookDetailPage() {
@@ -22,7 +28,7 @@ export default function BookDetailPage() {
     const [error, setError] = useState(null);
     
     const { toggleWishlist, isInWishlist } = useWishlist();
-    const { addToCart } = useCart(); // <-- 2. AMBIL FUNGSI addToCart
+    const { addToCart } = useCart();
     
     const isFavorite = book ? isInWishlist(book.id) : false; 
 
@@ -31,7 +37,9 @@ export default function BookDetailPage() {
             setLoading(true);
             setError(null);
             try {
+                // [FIX] Mengambil data dari API backend Anda
                 const response = await axios.get(`http://localhost:8000/api/books/${id}`);
+                // Data buku ada di dalam response.data.data (jika menggunakan Resource) atau response.data
                 setBook(response.data.data || response.data); 
             } catch (err) {
                 console.error("Error fetching book details:", err);
@@ -50,9 +58,8 @@ export default function BookDetailPage() {
     };
 
     const handleAddToCart = () => {
-        // <-- 3. GANTI ISI FUNGSI INI
         if (book) {
-            addToCart(book.id); // Panggil fungsi dari CartContext
+            addToCart(book.id); 
         }
     };
 
@@ -84,7 +91,8 @@ export default function BookDetailPage() {
          return <div className="text-center p-10">Buku tidak ditemukan.</div>;
     }
 
-    const authorNames = book.authors?.map(a => a.full_name).join(', ') || 'N/A';
+    // [FIX] Sesuaikan dengan struktur JSON API Anda
+    const authorNames = book.authors?.map(a => a.name || a.full_name).join(', ') || 'N/A';
     const publisherName = book.publisher?.name || 'N/A';
     const categoryNames = book.categories?.map(c => c.name).join(', ') || 'N/A';
     const discount = book.original_price ? Math.round(((book.original_price - book.price) / book.original_price) * 100) : 0;
@@ -102,9 +110,12 @@ export default function BookDetailPage() {
                 <div className="md:col-span-1">
                     <div className="relative mb-6 shadow-lg rounded-lg overflow-hidden">
                         <img 
-                            src={book.cover_image_url || placeholderImageUrl} 
+                            // --- PERBAIKAN UTAMA DI SINI ---
+                            // Menggunakan 'book.cover_url' sesuai data API
+                            src={book.cover_url || placeholderImageUrl} 
                             alt={book.title}
                             className="w-full h-auto object-cover" 
+                            onError={(e) => { e.target.src = placeholderImageUrl; }} // Fallback
                         />
                          {discount > 0 && (
                             <div className="absolute top-3 left-3 bg-red-600 text-white text-sm font-bold px-3 py-1 rounded-md shadow">
@@ -114,7 +125,7 @@ export default function BookDetailPage() {
                     </div>
                     <div className="flex flex-col gap-3">
                         <button 
-                            onClick={handleAddToCart} // <-- (Fungsi ini sekarang sudah benar)
+                            onClick={handleAddToCart}
                             className="w-full px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition-colors text-lg"
                         >
                             + Tambah ke Keranjang
@@ -178,7 +189,7 @@ export default function BookDetailPage() {
                             </div>
                              <div className="flex items-center gap-3">
                                 <Calendar className="w-5 h-5 text-gray-500" />
-                                <span><strong>Tahun Terbit:</strong> {book.publication_year || 'N/A'}</span>
+                                <span><strong>Tahun Terbit:</strong> {book.publication_year || book.published_year || 'N/A'}</span>
                             </div>
                              <div className="flex items-center gap-3">
                                 <Bookmark className="w-5 h-5 text-gray-500" /> 

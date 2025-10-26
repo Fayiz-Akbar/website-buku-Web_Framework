@@ -1,27 +1,34 @@
 // Path: frontend/src/components/Layout/BookCard.jsx
 import React from 'react'; 
 import { Link } from 'react-router-dom';
-import { Star, Heart, ShoppingCart } from 'lucide-react'; // 1. IMPORT ShoppingCart
+import { Star, Heart, ShoppingCart } from 'lucide-react'; 
 import { useWishlist } from '../../Context/WishlistContext';
-import { useCart } from '../../Context/CartContext'; // 2. IMPORT useCart
+import { useCart } from '../../Context/CartContext'; 
 
 // Helper format Rupiah
 const formatRupiah = (number) => {
+    // Konversi ke angka jika dia string
+    const numericNumber = Number(number);
+    if (isNaN(numericNumber)) {
+        return 'Invalid Price';
+    }
+    
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',
         minimumFractionDigits: 0
-    }).format(number);
+    }).format(numericNumber);
 };
 
 export default function BookCard({ book }) {
     const { toggleWishlist, isInWishlist } = useWishlist(); 
-    const { addToCart } = useCart(); // 3. AMBIL FUNGSI addToCart
+    const { addToCart } = useCart(); 
     const isFavorite = isInWishlist(book.id);
 
+    // [FIX] Menggunakan 'authors' (array) dan 'full_name' atau 'name'
     const authorName = book.authors && book.authors.length > 0
-        ? book.authors[0].full_name
-        : 'Penulis';
+        ? book.authors.map(a => a.full_name || a.name).join(', ')
+        : (book.author ? (book.author.full_name || book.author.name) : 'Penulis');
     
     const discount = book.original_price ? Math.round(((book.original_price - book.price) / book.original_price) * 100) : 0;
     
@@ -30,19 +37,24 @@ export default function BookCard({ book }) {
         toggleWishlist(book);
     };
 
-    // 4. BUAT FUNGSI BARU UNTUK ADD TO CART
     const handleAddToCart = (e) => {
         e.preventDefault(); // Mencegah navigasi ke detail buku
         addToCart(book.id); // Panggil fungsi dari CartContext
     };
+    
+    const placeholderImage = `https://placehold.co/300x400/e2e8f0/64748b?text=${book.title.split(' ').slice(0,3).join('+')}`;
 
     return (
         <Link to={`/books/${book.id}`} className="bg-white border rounded-lg overflow-hidden hover:shadow-lg transition-shadow group h-full flex flex-col">
             <div className="relative overflow-hidden bg-gray-50">
                 <img
-                    src={book.cover_image_url || `https://placehold.co/300x400/e2e8f0/64748b?text=${book.title.split(' ').slice(0,3).join('+')}`}
+                    // --- PERBAIKAN UTAMA DI SINI ---
+                    // Menggunakan 'book.cover_url' sesuai data API
+                    src={book.cover_url || placeholderImage}
                     alt={book.title}
                     className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
+                    // Fallback jika URL dari API gagal dimuat
+                    onError={(e) => { e.target.src = placeholderImage; }}
                 />
                 {discount > 0 && (
                     <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
@@ -85,7 +97,6 @@ export default function BookCard({ book }) {
                     </div>
                 </div>
                 
-                {/* 5. GANTI "Lihat Detail" MENJADI TOMBOL "Keranjang" */}
                 <button 
                     onClick={handleAddToCart}
                     className="w-full flex items-center justify-center gap-2 text-center mt-3 px-3 py-2 bg-blue-600 border-blue-600 border text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"

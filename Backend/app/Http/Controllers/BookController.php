@@ -149,7 +149,7 @@ class BookController extends Controller
     public function destroy(Book $book)
     {
         $old = $book->cover_image ?? $book->cover ?? null;
-        if ($old && !preg_match('/^https?:\/\//i', $old)) {
+        if ($old && !preg_match('/^httpsT?:\/\//i', $old)) {
             try { Storage::disk('public')->delete($old); } catch (\Throwable $e) {}
         }
         $book->delete();
@@ -213,15 +213,19 @@ class BookController extends Controller
         ];
     }
 
+    // =========================================================================
+    // --- FUNGSI YANG DIPERBAIKI ADA DI BAWAH INI ---
+    // =========================================================================
     private function buildCoverUrl(Book $b): ?string
     {
         // urutan kandidat kolom dari DB/seed JSON
-        $raw = $b->cover_image
+        $raw = $b->cover_image_url // <--- [PERBAIKAN] BACA 'cover_image_url' (DARI SEEDER)
+            ?? $b->cover_image
             ?? $b->cover
             ?? ($b->image_url ?? null)
-            ?? ($b->cover_url ?? null)
+            ?? ($b->cover_url ?? null) // <-- (Nama ini sudah dipakai di 'mapBook', jadi jangan dipakai di sini)
             ?? ($b->image ?? null)
-            ?? ($b->thumbnail ?? null) // tambahan fallback baru
+            ?? ($b->thumbnail ?? null)
             ?? null;
 
         if (!$raw || trim($raw) === '') {
@@ -231,7 +235,7 @@ class BookController extends Controller
 
         $raw = ltrim($raw);
 
-        // absolute URL
+        // absolute URL (misal: https://...)
         if (preg_match('~^https?://~i', $raw)) {
             return $raw;
         }
