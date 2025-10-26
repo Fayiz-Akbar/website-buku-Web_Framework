@@ -12,6 +12,7 @@ import { useAuth } from '../../Context/AuthContext'; // Sesuaikan path jika perl
  */
 const AuthGuard = ({ children }) => {
   const { user, isLoggedIn } = useAuth();
+  console.log("AuthGuard Check:", { isLoggedIn, userRole: user?.role });
 
   if (!isLoggedIn) {
     // 1. Jika belum login, lempar ke /login
@@ -23,6 +24,7 @@ const AuthGuard = ({ children }) => {
     // 2. Jika sudah login TAPI BUKAN admin, lempar ke homepage
     return <Navigate to="/" replace />;
   }
+  console.log("AuthGuard: Rendering children...");
 
   // 3. Jika sudah login DAN adalah admin, tampilkan halaman (children)
   return <>{children}</>;

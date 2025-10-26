@@ -1,18 +1,22 @@
 // frontend/src/components/Layout/AdminLayout.jsx
 
 import React from 'react';
-import Sidebar from './Sidebar';
-import Navbar from './Navbar';
+import Sidebar from './Sidebar'; // Asumsi Anda punya Sidebar
+import Navbar from './Navbar';   // Asumsi Anda punya Navbar
+import { Outlet } from 'react-router-dom'; // <-- 1. IMPORT OUTLET
 
-const AdminLayout = ({ children }) => {
+const AdminLayout = () => {
+  console.log("AdminLayout is rendering!");
   return (
     <div className="flex h-screen bg-gray-100">
-      <Sidebar />
+      <Sidebar /> {/* Komponen Sidebar Anda */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Navbar />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto mt-16 ml-64 p-6">
-          {/* Konten Halaman akan di-render di sini */}
-          {children}
+        <Navbar /> {/* Komponen Navbar Atas Anda */}
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-200 p-6">
+          {/* --- 2. LETAKKAN OUTLET DI SINI --- */}
+          <Outlet /> 
+          {/* Outlet adalah tempat halaman (DashboardPage, BookListPage, dll.) akan dirender */}
+          {/* ---------------------------------- */}
         </main>
       </div>
     </div>

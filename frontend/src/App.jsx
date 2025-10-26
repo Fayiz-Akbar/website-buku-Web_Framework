@@ -17,6 +17,7 @@ import BookCatalogPage from './pages/BookCatalogPage.jsx';
 import BookDetailPage from './pages/BookDetailPage.jsx';
 // --- IMPORT BARU ---
 import WishlistPage from './pages/WishlistPage.jsx'; 
+import NotFoundPage from './pages/Shared/NotFoundPage';
 
 // Halaman Admin
 import DashboardPage from './pages/DashboardPage';
@@ -35,43 +36,54 @@ import OrderDetailPage from './pages/Orders/OrderDetailPage';
 function App() {
   return (
     <Routes>
-      {/* Rute Tamu */}
+      {/* Rute Tamu (Sudah Benar) */}
       <Route element={<GuestRoute />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
       </Route>
       
-      {/* Rute User */}
+      {/* Rute User (Sudah Benar) */}
       <Route path="/" element={<UserLayout />}>
         <Route index element={<HomePage />} />
-        <Route path="/books" element={<BookCatalogPage />} />
-        <Route path="/books/:id" element={<BookDetailPage />} />
-        {/* --- ROUTE BARU --- */}
-        <Route path="/wishlist" element={<WishlistPage />} /> 
-        {/* <Route path="/profile" element={<ProfilePage />} /> */}
+        <Route path="books" element={<BookCatalogPage />} /> 
+        <Route path="books/:id" element={<BookDetailPage />} />
+        <Route path="wishlist" element={<WishlistPage />} /> 
       </Route>
 
-      {/* Rute Admin */}
-      <Route 
-        path="/" 
-        element={ <AuthGuard><AdminLayout /></AuthGuard> }
-      >
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="admin/books" element={<BookListPage />} />
-        <Route path="admin/books/new" element={<BookFormPage />} />
-        <Route path="admin/books/edit/:id" element={<BookFormPage />} />
-        <Route path="admin/categories" element={<CategoryListPage />} />
-        <Route path="admin/categories/new" element={<CategoryFormPage />} />
-        <Route path="admin/categories/edit/:id" element={<CategoryFormPage />} />
-        <Route path="admin/authors" element={<AuthorListPage />} />
-        <Route path="admin/authors/new" element={<AuthorFormPage />} />
-        <Route path="admin/authors/edit/:id" element={<AuthorFormPage />} />
-        <Route path="admin/publishers" element={<PublisherListPage />} />
-        <Route path="admin/publishers/new" element={<PublisherFormPage />} />
-        <Route path="admin/publishers/edit/:id" element={<PublisherFormPage />} />
-        <Route path="admin/orders" element={<OrderListPage />} />
-        <Route path="admin/orders/:id" element={<OrderDetailPage />} />
-      </Route>
+      {/* --- RUTE ADMIN (DIPERBAIKI) --- */}
+      {/* 1. Bungkus SEMUA rute admin dengan AuthGuard */}
+      <Route element={<AuthGuard />}> 
+        {/* 2. Gunakan AdminLayout SEBAGAI layout route untuk prefix /admin */}
+        <Route path="/admin" element={<AdminLayout />}> 
+          {/* 3. Definisikan rute admin RELATIF terhadap /admin */}
+          {/* Path kosong atau 'index' untuk /admin */}
+          <Route index element={<DashboardPage />} /> 
+          <Route path="dashboard" element={<DashboardPage />} /> 
+          
+          <Route path="books" element={<BookListPage />} />
+          <Route path="books/create" element={<BookFormPage />} /> 
+          <Route path="books/edit/:id" element={<BookFormPage />} />
+          
+          <Route path="categories" element={<CategoryListPage />} />
+          <Route path="categories/create" element={<CategoryFormPage />} /> 
+          <Route path="categories/edit/:id" element={<CategoryFormPage />} />
+          
+          <Route path="authors" element={<AuthorListPage />} />
+          <Route path="authors/create" element={<AuthorFormPage />} /> 
+          <Route path="authors/edit/:id" element={<AuthorFormPage />} />
+          
+          <Route path="publishers" element={<PublisherListPage />} />
+          <Route path="publishers/create" element={<PublisherFormPage />} /> 
+          <Route path="publishers/edit/:id" element={<PublisherFormPage />} />
+          
+          <Route path="orders" element={<OrderListPage />} />
+          <Route path="orders/:id" element={<OrderDetailPage />} />
+        </Route> 
+      </Route> 
+      {/* --- AKHIR RUTE ADMIN --- */}
+
+      {/* Rute 404 (Opsional, letakkan di luar guard jika perlu) */}
+      <Route path="*" element={<NotFoundPage />} /> 
     </Routes>
   );
 }
