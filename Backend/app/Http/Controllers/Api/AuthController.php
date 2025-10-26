@@ -11,13 +11,22 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator; // Import Validator
 use Illuminate\Validation\Rules\Password; // Import Password rule
 
-use Illuminate\Support\Facades\Mail; 
+use App\Services\PHPMailerService;
 
 class AuthController extends Controller
 {
     /**
      * Handle user registration.
      */
+
+    protected $phpMailerService;
+
+    // [PERBAIKAN 3] Gunakan Dependency Injection
+    public function __construct(PHPMailerService $phpMailerService)
+    {
+        $this->phpMailerService = $phpMailerService;
+    }
+
     public function register(Request $request)
     {
         // 1. Validasi Input (Gunakan 'full_name')
@@ -40,10 +49,7 @@ class AuthController extends Controller
         ]);
 
         // Send a simple welcome email without requiring a Mailable class
-        Mail::raw("Halo {$user->full_name},\n\nTerima kasih telah mendaftar di aplikasi kami.", function ($message) use ($user) {
-            $message->to($user->email)
-                    ->subject('Selamat datang di Aplikasi Kami');
-        });
+        $this->phpMailerService->sendWelcomeEmail($user);
         $token = $user->createToken('auth_token')->plainTextToken;
 
         // 4. Kembalikan Response
