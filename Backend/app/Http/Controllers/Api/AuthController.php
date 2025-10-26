@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator; // Import Validator
 use Illuminate\Validation\Rules\Password; // Import Password rule
 
+use Illuminate\Support\Facades\Mail; 
+
 class AuthController extends Controller
 {
     /**
@@ -37,7 +39,11 @@ class AuthController extends Controller
             // Role default 'user' sudah diatur di migrasi/model
         ]);
 
-        // 3. Buat Token Sanctum
+        // Send a simple welcome email without requiring a Mailable class
+        Mail::raw("Halo {$user->full_name},\n\nTerima kasih telah mendaftar di aplikasi kami.", function ($message) use ($user) {
+            $message->to($user->email)
+                    ->subject('Selamat datang di Aplikasi Kami');
+        });
         $token = $user->createToken('auth_token')->plainTextToken;
 
         // 4. Kembalikan Response

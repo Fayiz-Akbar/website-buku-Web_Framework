@@ -1,65 +1,95 @@
+// File: frontend/src/pages/Register/RegisterPage.jsx
+
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+// [PERBAIKAN 1] Import API client terpusat
+import { api } from '../../api/axios'; 
 
 const RegisterPage = () => {
-    // Kita tetap gunakan state 'name' untuk simpel
-    const [name, setName] = useState(''); 
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [passwordConfirmation, setPasswordConfirmation] = useState('');
-    
-    const [errors, setErrors] = useState({}); 
-    const [apiError, setApiError] = useState(null); 
     const navigate = useNavigate();
+
+    // [PERBAIKAN 2] Menggunakan state tunggal untuk formData
+    const [formData, setFormData] = useState({
+        full_name: '', // Sesuai dengan kolom backend
+        email: '',
+        password: '',
+        password_confirmation: '',
+    });
+
+    const [errors, setErrors] = useState({});
+    const [apiError, setApiError] = useState(null);
+    const [successMsg, setSuccessMsg] = useState(null); // Tambahkan state sukses
+    const [isLoading, setIsLoading] = useState(false); // Tambahkan state loading
+
+    // [PERBAIKAN 3] Handler tunggal untuk perubahan input
+    const handleChange = (e) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value,
+        });
+        // Hapus error spesifik saat user mulai mengetik
+        if (errors[e.target.name]) {
+            setErrors(prev => ({ ...prev, [e.target.name]: null }));
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setErrors({}); 
+        setIsLoading(true);
+        setErrors({});
         setApiError(null);
+        setSuccessMsg(null);
 
         try {
-            // --- INI BAGIAN YANG DIPERBAIKI (1) ---
-            // Kita kirim 'full_name' sesuai permintaan backend
-            await axios.post('http://localhost:8000/api/register', {
-                full_name: name, // Diganti dari 'name'
-                email,
-                password,
-                password_confirmation: passwordConfirmation
-            });
+            // [PERBAIKAN 4] Menggunakan api client dan endpoint yang benar
+            await api.post('/register', formData);
 
-            alert('Registrasi berhasil! Silakan login.');
-            navigate('/login');
+            // --- Registrasi Berhasil ---
+            setSuccessMsg('Registrasi berhasil! Silakan cek email Anda untuk notifikasi (via Mailgun) dan login.');
+            
+            // Bersihkan form
+            setFormData({ full_name: '', email: '', password: '', password_confirmation: '' });
+
+            // Arahkan ke halaman login setelah 3 detik
+            setTimeout(() => {
+                navigate('/login');
+            }, 3000);
 
         } catch (error) {
+            console.error('Registrasi Gagal:', error.response || error);
+            
             if (error.response) {
-                const data = error.response.data;
-                const status = error.response.status;
+                const { status, data } = error.response;
 
                 if (status === 422) {
+                    // Error validasi dari Laravel
                     if (data && data.errors) {
                         setErrors(data.errors);
-                    } 
-                    else if (data && data.message) {
+                    } else if (data && data.message) {
                         setApiError(data.message);
-                    }
-                    else {
-                        setApiError('Data yang dikirim tidak valid.');
                     }
                 } else {
                     setApiError(`Terjadi error: ${status}. Silakan coba lagi nanti.`);
                 }
             } else {
                 setApiError('Registrasi gagal. Server tidak merespons atau network error.');
-                console.error('Registrasi gagal:', error);
             }
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
-            <form onSubmit={handleSubmit} className="p-8 bg-white shadow-md rounded-lg max-w-sm w-full">
+            <form onSubmit={handleSubmit} className="p-8 bg-white shadow-md rounded-lg max-w-md w-full">
                 <h2 className="text-2xl font-bold mb-6 text-center">Daftar Akun Baru</h2>
+                
+                {/* [PERBAIKAN 5] Tampilkan pesan Sukses / General Error */}
+                {successMsg && (
+                    <div className="p-3 text-sm text-green-700 bg-green-100 border border-green-400 rounded mb-4">
+                        {successMsg}
+                    </div>
+                )}
 
                 {apiError && (
                     <div className="text-red-700 mb-4 p-3 bg-red-100 border border-red-400 rounded">
@@ -67,14 +97,16 @@ const RegisterPage = () => {
                     </div>
                 )}
 
-                {/* --- INI BAGIAN YANG DIPERBAIKI (2) --- */}
+                {/* --- Form Fields --- */}
+                
+                {/* Nama Lengkap (full_name) */}
                 <div className="mb-4">
                     <label className="block text-gray-700 text-sm font-bold mb-2">Nama Lengkap</label>
                     <input
                         type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        // Cek error 'full_name'
+                        name="full_name" // [PERBAIKAN 6] Gunakan name="full_name"
+                        value={formData.full_name}
+                        onChange={handleChange}
                         className={`w-full p-2 border rounded ${errors.full_name ? 'border-red-500' : 'border-gray-300'}`}
                         required
                     />
@@ -82,50 +114,61 @@ const RegisterPage = () => {
                     {errors.full_name && <small className="text-red-500">{errors.full_name[0]}</small>}
                 </div>
 
+                {/* Email */}
                 <div className="mb-4">
                     <label className="block text-gray-700 text-sm font-bold mb-2">Email</label>
                     <input
                         type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
                         className={`w-full p-2 border rounded ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
                         required
                     />
                     {errors.email && <small className="text-red-500">{errors.email[0]}</small>}
                 </div>
 
+                {/* Password */}
                 <div className="mb-4">
                     <label className="block text-gray-700 text-sm font-bold mb-2">Password</label>
                     <input
                         type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
                         className={`w-full p-2 border rounded ${errors.password ? 'border-red-500' : 'border-gray-300'}`}
                         required
                     />
                     {errors.password && <small className="text-red-500">{errors.password[0]}</small>}
                 </div>
 
+                {/* Konfirmasi Password */}
                 <div className="mb-6">
                     <label className="block text-gray-700 text-sm font-bold mb-2">Konfirmasi Password</label>
                     <input
                         type="password"
-                        value={passwordConfirmation}
-                        onChange={(e) => setPasswordConfirmation(e.target.value)}
+                        name="password_confirmation"
+                        value={formData.password_confirmation}
+                        onChange={handleChange}
+                        // Error konfirmasi password biasanya muncul di field 'password' atau 'password_confirmation'
                         className={`w-full p-2 border rounded ${errors.password_confirmation ? 'border-red-500' : 'border-gray-300'}`}
                         required
                     />
                     {errors.password_confirmation && <small className="text-red-500">{errors.password_confirmation[0]}</small>}
                 </div>
 
-                <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-200">
-                    Daftar
+                <button 
+                    type="submit" 
+                    disabled={isLoading} // [PERBAIKAN 7] Nonaktifkan saat loading
+                    className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 transition duration-200 disabled:bg-gray-400"
+                >
+                    {isLoading ? 'Mendaftarkan...' : 'Daftar'}
                 </button>
 
                 <p className="mt-6 text-center text-sm">
                     Sudah punya akun?{' '}
                     <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
-                        Login di sini
+                        Masuk di sini
                     </Link>
                 </p>
             </form>
@@ -134,4 +177,3 @@ const RegisterPage = () => {
 };
 
 export default RegisterPage;
-
