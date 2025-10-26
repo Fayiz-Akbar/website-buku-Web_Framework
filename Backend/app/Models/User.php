@@ -20,21 +20,12 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Kolom yang boleh diisi secara massal.
      */
-    protected $fillable = [
-        'full_name', // Sesuai file-mu
-        'email',
-        'password',
-        'role',
-        'profile_image_url',
-    ];
+    protected $fillable = ['full_name','email','password','avatar','profile_image_url'];
 
     /**
      * Kolom yang harus disembunyikan.
      */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    protected $hidden = ['password','remember_token'];
 
     /**
      * Kolom yang harus di-cast.
@@ -43,6 +34,14 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    protected $appends = ['avatar_url'];
+
+    public function getAvatarUrlAttribute()
+    {
+        if ($this->avatar) return asset('storage/'.$this->avatar);
+        return $this->profile_image_url ?: null;
+    }
 
     // =================================================================
     // RELASI ELOQUENT (Tidak berubah, sudah benar)

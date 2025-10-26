@@ -1,103 +1,85 @@
 // Di dalam file AuthContext.jsx
 
-import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import { createContext, useContext, useState, useEffect } from "react";
+import { apiAuth, apiPublic, setAuthToken } from "../api/axios"; // ganti dari 'axios'
 
-const API_URL = 'http://localhost:8000/api'; 
+export const AuthContext = createContext(null); // sediakan named export juga
 
-const AuthContext = createContext();
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem("token") || null);
+  const [loading, setLoading] = useState(true);
 
-export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [token, setToken] = useState(localStorage.getItem('token') || null);
-    const [loading, setLoading] = useState(true); 
-
-    useEffect(() => {
-        if (token) {
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            axios.get(`${API_URL}/user`) 
-                .then(response => {
-                    setUser(response.data);
-                })
-                .catch(() => {
-                    // Token tidak valid, hapus
-                    localStorage.removeItem('token');
-                    setToken(null);
-                    setUser(null); // Pastikan user juga di-null-kan
-                    delete axios.defaults.headers.common['Authorization'];
-                })
-                .finally(() => {
-                    setLoading(false);
-                });
-        } else {
-            setLoading(false);
-        }
-    }, [token]);
-
-    // --- FUNGSI LOGIN YANG DIPERBAIKI ---
-    const login = async (email, password) => {
-        
-        // 1. Bungkus semua dengan try...catch
-        try {
-            // Hapus header auth lama jika ada
-            delete axios.defaults.headers.common['Authorization'];
-            
-            // 2. Coba lakukan request login
-            const response = await axios.post(`${API_URL}/login`, { email, password });
-
-            // 3. Cek jika backend merespons DENGAN token dan user
-            if (response.data && response.data.token && response.data.user) {
-                const { token: apiToken, user: apiUser } = response.data;
-
-                // 4. Simpan state
-                setToken(apiToken);
-                setUser(apiUser);
-                localStorage.setItem('token', apiToken);
-                axios.defaults.headers.common['Authorization'] = `Bearer ${apiToken}`;
-                
-                return apiUser; // Kembalikan user data ke LoginPage
-            } else {
-                // Seharusnya tidak terjadi, tapi jika backend 200 OK tapi data aneh
-                throw new Error('Respons login tidak valid.');
-            }
-        } catch (error) {
-            // 5. Jika axios GAGAL (401, 422, 500)
-            // Hapus token lama jika ada (jaga-jaga)
-            localStorage.removeItem('token');
-            setToken(null);
-            setUser(null);
-            delete axios.defaults.headers.common['Authorization'];
-            
-            // 6. Lempar error ini kembali ke LoginPage.jsx agar bisa ditangani di sana
-            throw error; 
-        }
-    };
-    // --- BATAS PERBAIKAN ---
-
-    const logout = () => {
-        setUser(null);
-        setToken(null);
-        localStorage.removeItem('token');
-        delete axios.defaults.headers.common['Authorization'];
-    };
-
-    // Memperbarui informasi user di context setelah update profil
-    const updateUser = (updatedUser) => {
-        // Terima baik objek user lengkap dari server maupun partial
-        setUser((prev) => ({ ...prev, ...updatedUser }));
-    };
-
-    if (loading) {
-        return <div>Loading...</div>; 
+  useEffect(() => {
+    if (token) {
+      setAuthToken(token);
+      apiAuth
+        .get("/user")
+        .then((res) => setUser(res.data))
+        .catch(() => {
+          localStorage.removeItem("token");
+          setToken(null);
+          setUser(null);
+          setAuthToken(null);
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
+  }, [token]);
 
-    return (
-        <AuthContext.Provider value={{ user, token, login, logout, updateUser, isLoggedIn: !!token }}>
-            {children}
-        </AuthContext.Provider>
-    );
-};
+  // --- FUNGSI LOGIN YANG DIPERBAIKI ---
+  const login = async (email, password) => {
+    try {
+      // pastikan tidak ada token lama saat login
+      setAuthToken(null);
+      const res = await apiPublic.post("/login", { email, password });
 
-export const useAuth = () => {
-    return useContext(AuthContext);
-};
+      if (res.data?.token && res.data?.user) {
+        const { token: apiToken, user: apiUser } = res.data;
+        setToken(apiToken);
+        setUser(apiUser);
+        localStorage.setItem("token", apiToken);
+        setAuthToken(apiToken);
+        return apiUser;
+      }
+      throw new Error("Respons login tidak valid.");
+    } catch (err) {
+      localStorage.removeItem("token");
+      setToken(null);
+      setUser(null);
+      setAuthToken(null);
+      throw err;
+    }
+  };
+  // --- BATAS PERBAIKAN ---
+
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem("token");
+    setAuthToken(null);
+  };
+
+  // Memperbarui informasi user di context setelah update profil
+  const updateUser = (updatedUser) => {
+    // Terima baik objek user lengkap dari server maupun partial
+    setUser((prev) => ({ ...prev, ...updatedUser }));
+  };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <AuthContext.Provider
+      value={{ user, setUser, token, login, logout, updateUser, isLoggedIn: !!token }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  return useContext(AuthContext);
+}

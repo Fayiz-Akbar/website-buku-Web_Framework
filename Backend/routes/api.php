@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\PublisherController;
 use App\Http\Controllers\Api\AdminOrderController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\UserAddressController;
+use App\Http\Controllers\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -69,6 +70,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/cart/add', [CartController::class, 'addBook']);
     Route::put('/cart/{cartItemId}', [CartController::class, 'updateQuantity']);
     Route::delete('/cart/{cartItemId}', [CartController::class, 'removeBook']);
+
+    // Profile
+    Route::post('/profile/photo', [ProfileController::class, 'updatePhoto']);
+    Route::put('/profile', [ProfileController::class, 'update']);
+    Route::get('/me', [ProfileController::class, 'me']);
 });
 
 /*

@@ -1,7 +1,7 @@
 // frontend/src/components/Layout/Navbar.jsx
 
 import React from 'react';
-import { useAuth } from '../../Context/AuthContext'; // Sesuaikan path jika perlu
+import { useAuth } from '../../context/AuthContext'; // Sesuaikan path jika perlu
 import { useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
@@ -18,6 +18,11 @@ const Navbar = () => {
       <h3 className="text-xl font-medium text-gray-700">Dashboard Panel</h3>
       <div className="flex items-center space-x-4">
         <span className="text-gray-600">Halo, Admin!</span>
+        <img
+          src={user?.avatar_url || user?.avatar || "/default-avatar.png"}
+          alt="avatar"
+          className="h-8 w-8 rounded-full object-cover"
+        />
         <button
           onClick={handleLogout}
           className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-4 rounded transition duration-150"

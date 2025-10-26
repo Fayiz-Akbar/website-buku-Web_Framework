@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 // [PERBAIKAN 1] Ganti axios dengan API client terpusat
-import { api } from '../api/axios'; 
+import { apiPublic as api } from "../api/axios"; // ganti dari { api } atau default
 // Import lucide-react icons (sudah ada)
 import { BookOpen, Tag, Award, Bookmark, Layers, Monitor, Loader2 } from 'lucide-react';
 
@@ -13,7 +13,7 @@ import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 
 // [PERBAIKAN 2] Import Contexts untuk Cart dan Auth
 import { useCart } from '../Context/CartContext'; 
-import { useAuth } from '../Context/AuthContext';
+import { useAuth } from './../context/AuthContext';
 
 // Import Swiper styles (sudah ada)
 import 'swiper/css';
