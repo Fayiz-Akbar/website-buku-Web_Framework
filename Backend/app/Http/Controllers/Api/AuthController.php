@@ -156,4 +156,33 @@ class AuthController extends Controller
             ]
         ]);
     }
+
+    /**
+     * Update user password
+     */
+    public function updatePassword(Request $request)
+    {
+        $user = $request->user();
+
+        $validator = Validator::make($request->all(), [
+            'current_password' => ['required', 'string'],
+            'new_password' => ['required', 'confirmed', Password::min(8)],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => 'Validasi gagal', 'errors' => $validator->errors()], 422);
+        }
+
+        if (!Hash::check($request->input('current_password'), $user->password)) {
+            return response()->json(['message' => 'Password lama tidak sesuai.'], 422);
+        }
+
+        $user->password = Hash::make($request->input('new_password'));
+        $user->save();
+
+        // Optional: revoke existing tokens to force re-login
+        // $user->tokens()->delete();
+
+        return response()->json(['message' => 'Password berhasil diperbarui.']);
+    }
 }

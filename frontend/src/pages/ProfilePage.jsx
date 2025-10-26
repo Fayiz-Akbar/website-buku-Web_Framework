@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import UpdateProfileForm from './Profile/UpdateProfileForm'; 
 import UpdatePasswordForm from './Profile/UpdatePasswordForm';
 import UserOrderList from './Profile/UserOrderList';
+import UserAddressPage from './Profile/UserAddressPage';
 
 // Fungsi untuk mendapatkan komponen yang akan dirender berdasarkan path
 const getProfileComponent = (pathname) => {
@@ -14,6 +15,9 @@ const getProfileComponent = (pathname) => {
         case '/password':
             // Menggunakan komponen form ubah password
             return <UpdatePasswordForm />;
+        case '/addresses':
+            // Kelola alamat pengiriman
+            return <UserAddressPage />;
         case '/orders':
             // Menggunakan komponen daftar pesanan
             return <UserOrderList />;
@@ -32,8 +36,8 @@ export default function ProfilePage() {
     const navItems = [
         { path: "/profile", name: "Data Diri" },
         { path: "/profile/password", name: "Ubah Password" },
+        { path: "/profile/addresses", name: "Alamat Pengiriman" },
         { path: "/profile/orders", name: "Riwayat Pesanan" },
-        // Anda bisa menambahkan sub-rute lain di sini
     ];
 
     return (

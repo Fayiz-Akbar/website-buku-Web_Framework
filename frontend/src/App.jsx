@@ -33,6 +33,7 @@ import OrderListPage from './pages/Orders/OrderListPage';
 import OrderDetailPage from './pages/Orders/OrderDetailPage';
 import CheckoutPage from './pages/CheckoutPage';
 import CartPage from './pages/CartPage'; 
+import CategoryBooksPage from "./pages/Categories/CategoryBooksPage";
 
 
 function App() {
@@ -89,6 +90,7 @@ function App() {
         <Route path="admin/orders" element={<OrderListPage />} />
         <Route path="admin/orders/:id" element={<OrderDetailPage />} />
       </Route>
+      <Route path="/category/:id" element={<CategoryBooksPage />} />
     </Routes>
   );
 }

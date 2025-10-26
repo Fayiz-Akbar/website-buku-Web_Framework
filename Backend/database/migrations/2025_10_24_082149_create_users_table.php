@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('password'); // Akan di-hash oleh Laravel
             $table->enum('role', ['admin', 'user'])->default('user'); // Kolom Role
             $table->string('profile_image_url')->nullable();
+            $table->string('avatar')->nullable();
             $table->rememberToken();
             $table->timestamps(); // created_at dan updated_at
             $table->softDeletes(); // Kolom deleted_at (untuk soft delete)

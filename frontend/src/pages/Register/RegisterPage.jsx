@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { api } from '../../api/axios'; // Import API client terpusat
+import { apiPublic } from '../../api/axios';
 // Asumsi: Anda sudah membuat file axios.js
 
 const RegisterPage = () => {
@@ -39,7 +39,7 @@ const RegisterPage = () => {
 
         try {
             // Panggil endpoint register Laravel
-            const response = await api.post('/register', formData);
+            const response = await apiPublic.post('/register', formData);
 
             // --- Registrasi Berhasil (Status 201) ---
             // Pesan sukses dari backend: response.data.message

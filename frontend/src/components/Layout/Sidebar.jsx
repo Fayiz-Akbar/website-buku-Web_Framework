@@ -4,6 +4,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 
 const Sidebar = () => {
+  console.log("Sidebar component is rendering!");
   const navItems = [
     { name: 'Dashboard', path: '/admin/dashboard' },
     { name: 'Manajemen Buku', path: '/admin/books' },
