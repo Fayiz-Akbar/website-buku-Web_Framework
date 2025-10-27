@@ -21,6 +21,16 @@ const formatRupiah = (number) => {
     }).format(numericNumber);
 };
 
+const API_ORIGIN = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const resolveAssetUrl = (u) => {
+  if (!u) return '';
+  if (/^https?:\/\//i.test(u)) return u;
+  const base = API_ORIGIN.replace(/\/+$/,'');
+  const path = (`/${String(u)}`).replace(/\/+/g,'/').replace(/^\/public\//,'/');
+  const normalized = path.startsWith('/storage/') ? path : `/storage/${path.replace(/^\/?/,'')}`;
+  return `${base}${normalized}`;
+};
+
 export default function BookCard({ book }) {
     const { toggleWishlist, isInWishlist } = useWishlist(); 
     const { addToCart } = useCart(); 
@@ -50,19 +60,15 @@ export default function BookCard({ book }) {
         }
     };
     
-    const placeholderImage = `https://placehold.co/300x400/e2e8f0/64748b?text=${book.title.split(' ').slice(0,3).join('+')}`;
+    const coverUrl = resolveAssetUrl(book.cover_url ?? book.cover ?? book.cover_image_url ?? book.cover_path);
 
     return (
         <Link to={`/books/${book.id}`} className="bg-white border rounded-lg overflow-hidden hover:shadow-lg transition-shadow group h-full flex flex-col">
             <div className="relative overflow-hidden bg-gray-50">
                 <img
-                    // --- PERBAIKAN UTAMA DI SINI ---
-                    // Menggunakan 'book.cover_url' sesuai data API
-                    src={book.cover_url || placeholderImage}
+                    src={coverUrl || 'https://via.placeholder.com/300x420?text=No+Cover'}
                     alt={book.title}
-                    className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
-                    // Fallback jika URL dari API gagal dimuat
-                    onError={(e) => { e.target.src = placeholderImage; }}
+                    className="w-full h-64 object-cover rounded"
                 />
                 {discount > 0 && (
                     <div className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">

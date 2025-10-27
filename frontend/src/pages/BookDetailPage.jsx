@@ -21,6 +21,16 @@ const formatRupiah = (number) => {
     }).format(numericNumber);
 };
 
+const API_ORIGIN = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const resolveAssetUrl = (u) => {
+  if (!u) return '';
+  if (/^https?:\/\//i.test(u)) return u;
+  const base = API_ORIGIN.replace(/\/+$/,'');
+  const path = (`/${String(u)}`).replace(/\/+/g,'/').replace(/^\/public\//,'/');
+  const normalized = path.startsWith('/storage/') ? path : `/storage/${path.replace(/^\/?/,'')}`;
+  return `${base}${normalized}`;
+};
+
 export default function BookDetailPage() {
     const { id } = useParams(); 
     const [book, setBook] = useState(null);
@@ -98,6 +108,7 @@ export default function BookDetailPage() {
     const discount = book.original_price ? Math.round(((book.original_price - book.price) / book.original_price) * 100) : 0;
     
     const placeholderImageUrl = `https://placehold.co/600x800/e2e8f0/64748b?text=${book.title.split(' ').slice(0,3).join('+')}`;
+    const coverUrl = resolveAssetUrl(book.cover_url ?? book.cover ?? book.cover_image_url ?? book.cover_path);
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -112,9 +123,9 @@ export default function BookDetailPage() {
                         <img 
                             // --- PERBAIKAN UTAMA DI SINI ---
                             // Menggunakan 'book.cover_url' sesuai data API
-                            src={book.cover_url || placeholderImageUrl} 
+                            src={coverUrl || 'https://via.placeholder.com/600x800?text=No+Cover'} 
                             alt={book.title}
-                            className="w-full h-auto object-cover" 
+                            className="w-full max-w-sm rounded shadow" 
                             onError={(e) => { e.target.src = placeholderImageUrl; }} // Fallback
                         />
                          {discount > 0 && (

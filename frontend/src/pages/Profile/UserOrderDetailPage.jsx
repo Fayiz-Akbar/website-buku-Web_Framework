@@ -21,9 +21,24 @@ const getStatusBadge = (status) => {
   }
 };
 
-const formatRupiah = (number) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number || 0);
-}
+const API_ORIGIN = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const resolveAssetUrl = (u) => {
+  if (!u) return '';
+  // Biarkan URL absolut/data/blob apa adanya
+  if (/^(https?:|data:|blob:)/i.test(String(u))) return String(u);
+  const base = API_ORIGIN.replace(/\/+$/, '');
+  let path = (`/${String(u)}`).replace(/\/+/g, '/').replace(/^\/public\//, '/');
+  if (!path.startsWith('/storage/')) {
+    path = `/storage/${path.replace(/^\/?/, '')}`;
+  }
+  return `${base}${path}`;
+};
+
+const formatRupiah = (n) =>
+  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })
+    .format(Number(n || 0));
+
+const firstNonEmpty = (...vals) => vals.find(v => v !== undefined && v !== null && v !== '');
 
 export default function UserOrderDetailPage() {
     const { id } = useParams(); // Ambil ID dari URL
@@ -88,7 +103,97 @@ export default function UserOrderDetailPage() {
     if (!order) return null; // Seharusnya tidak terjadi jika error handling benar
 
     // Destructure untuk kemudahan
-    const { address, payment, items = [] } = order; // Default items ke array kosong
+    const { address, payment } = order;
+    const orderItemsRaw = Array.isArray(order?.items)
+      ? order.items
+      : (Array.isArray(order?.order_items) ? order.order_items : []);
+
+    const proofUrl = resolveAssetUrl(
+      order?.payment?.payment_proof_url ??
+      order?.payment?.proof_url ??
+      order?.payment?.proof ??
+      order?.payment?.proof_path
+    );
+
+    // Normalisasi item pesanan agar judul, harga, dan cover konsisten
+    const normalizedItems = orderItemsRaw.map(i => {
+      const qty = Number(i.quantity ?? i.qty ?? 0);
+      const unit = Number(
+        i.unit_price ??
+        i.snapshot_price_per_item ??
+        i.price ??
+        i.selling_price ??
+        i.book?.price ??
+        i.book?.selling_price ??
+        0
+      );
+      const title = firstNonEmpty(i.title, i.book_title, i.snapshot_book_title, i.book?.title, '-') || '-';
+
+      const coverCandidate = firstNonEmpty(
+        i.snapshot_cover_url,
+        i.snapshot_book_cover_url,
+        i.snapshot_cover_path,
+        i.cover_url,
+        i.cover_path,
+        i.book_cover_url,
+        i.book_cover,
+        i.book?.cover_url,
+        i.book?.cover_image_url,
+        i.book?.image_url,
+        i.book?.cover_path,
+        i.book?.image_path,
+        i.book?.cover
+      );
+      const coverUrl = resolveAssetUrl(coverCandidate);
+
+      return { id: i.id ?? `${title}-${Math.random()}`, title, qty, unit, coverUrl };
+    });
+
+    // Nilai pembayaran & ringkasan dari berbagai kemungkinan field backend
+    const subtotalItems = Number(firstNonEmpty(
+      order.total_items_price,
+      order.items_total_price,
+      order.items_total,
+      order.subtotal,
+      order.total_products_price,
+      normalizedItems.reduce((s, it) => s + (Number(it.unit) * Number(it.qty)), 0)
+    ) || 0);
+
+    const shippingCost = Number(firstNonEmpty(
+      order.shipping_cost,
+      order.shipping_fee,
+      order.shipping_price,
+      payment?.shipping_cost,
+      0
+    ) || 0);
+
+    const discountAmount = Number(firstNonEmpty(
+      order.discount_amount,
+      order.discount,
+      order.voucher_discount,
+      0
+    ) || 0);
+
+    const finalAmount = Number(firstNonEmpty(
+      order.final_amount,
+      order.total_amount,
+      order.total,
+      subtotalItems + shippingCost - discountAmount
+    ) || 0);
+
+    const totalTagihan = Number(firstNonEmpty(
+      payment?.amount_due,
+      payment?.bill_amount,
+      finalAmount
+    ) || 0);
+
+    const jumlahDibayar = Number(firstNonEmpty(
+      payment?.amount_paid,
+      payment?.paid_amount,
+      payment?.amount,
+      payment?.total_paid,
+      0
+    ) || 0);
 
     return (
         <div className="max-w-4xl mx-auto py-10 px-4">
@@ -152,15 +257,16 @@ export default function UserOrderDetailPage() {
                             <div className="text-sm text-gray-700 bg-gray-50 p-4 rounded-lg border border-gray-200">
                                 <p>Metode: <span className="font-medium text-gray-900">{payment.method === 'qris_manual' ? 'QRIS (Manual)' : (payment.method || '-')}</span></p>
                                 <p>Status: <span className="font-medium text-gray-900">{payment.status || '-'}</span></p>
-                                <p>Total Tagihan: <span className="font-medium text-gray-900">{formatRupiah(payment.amount_due)}</span></p>
-                                <p>Jumlah Dibayar: <span className="font-medium text-gray-900">{formatRupiah(payment.amount_paid)}</span></p>
-                                {payment.payment_proof_url && (
-                                    <div className="mt-3">
-                                        <p className="font-medium text-gray-900 mb-1">Bukti Pembayaran:</p>
-                                        <a href={payment.payment_proof_url} target="_blank" rel="noopener noreferrer" className="inline-block border rounded hover:opacity-80 transition">
-                                            <img src={payment.payment_proof_url} alt="Bukti bayar" className="w-32 h-32 object-cover rounded" />
-                                        </a>
-                                    </div>
+                                <p>Total Tagihan: <span className="font-medium text-gray-900">{formatRupiah(totalTagihan)}</span></p>
+                                {proofUrl ? (
+                                  <div className="mt-3">
+                                      <p className="font-medium text-gray-900 mb-1">Bukti Pembayaran:</p>
+                                      <a href={proofUrl} target="_blank" rel="noreferrer" className="inline-block border rounded hover:opacity-80 transition">
+                                          <img src={proofUrl} alt="Bukti pembayaran" className="max-h-64 rounded border" />
+                                      </a>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-slate-500">Belum ada bukti pembayaran.</p>
                                 )}
                             </div>
                          ) : <p className="text-sm text-gray-500 italic">Data pembayaran tidak tersedia.</p>}
@@ -169,54 +275,54 @@ export default function UserOrderDetailPage() {
 
                 {/* Detail Item */}
                 <div className="p-6 border-t mt-2">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2"><ShoppingBag className="w-5 h-5 text-gray-600"/>Item yang Dipesan ({items.length})</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2"><ShoppingBag className="w-5 h-5 text-gray-600"/>Item yang Dipesan ({normalizedItems.length})</h3>
                     <div className="space-y-4">
-                        {items.length > 0 ? items.map(item => (
-                            <div key={item.id} className="flex gap-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-                                <img
-                                    src={item.book?.cover_url || `https://placehold.co/80x120/e2e8f0/64748b?text=${item.snapshot_book_title?.substring(0,10)}`}
-                                    alt={item.snapshot_book_title || 'Buku'}
-                                    className="w-16 h-24 object-cover rounded flex-shrink-0 bg-gray-100" // Tambah bg
-                                    onError={(e) => { e.target.src = `https://placehold.co/80x120/e2e8f0/64748b?text=Error`; }} // Fallback
+                        {normalizedItems.length > 0 ? normalizedItems.map(item => (
+                             <div key={item.id} className="flex gap-4 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                                 <img
+                                    src={item.coverUrl || `https://placehold.co/80x120/e2e8f0/64748b?text=${String(item.title || 'Buku').substring(0,10)}`}
+                                    alt={item.title || 'Buku'}
+                                     className="w-16 h-24 object-cover rounded flex-shrink-0 bg-gray-100" // Tambah bg
+                                    onError={(e) => { e.currentTarget.src = `https://placehold.co/80x120/e2e8f0/64748b?text=No+Cover`; }} // Fallback
                                 />
                                 <div className="flex-1 min-w-0"> {/* Tambah min-w-0 */}
-                                    <p className="font-semibold text-gray-900 leading-tight truncate">{item.snapshot_book_title || '-'}</p> {/* Tambah truncate */}
-                                    <p className="text-sm text-gray-500">Jumlah: {item.quantity || '-'}</p>
-                                    <p className="text-sm text-gray-500">Harga Satuan: {formatRupiah(item.snapshot_price_per_item)}</p>
-                                </div>
-                                <div className="text-right flex-shrink-0 ml-2"> {/* Tambah ml-2 */}
-                                    <p className="font-semibold text-gray-900">{formatRupiah(item.quantity * item.snapshot_price_per_item)}</p>
-                                </div>
-                            </div>
-                        )) : (
-                             <p className="text-sm text-gray-500 italic">Tidak ada item dalam pesanan ini.</p>
-                        )}
-                    </div>
-                </div>
+                                    <p className="font-semibold text-gray-900 leading-tight truncate">{item.title || '-'}</p> {/* Tambah truncate */}
+                                    <p className="text-sm text-gray-500">Jumlah: {item.qty || '-'}</p>
+                                    <p className="text-sm text-gray-500">Harga Satuan: {formatRupiah(item.unit)}</p>
+                                 </div>
+                                 <div className="text-right flex-shrink-0 ml-2"> {/* Tambah ml-2 */}
+                                    <p className="font-semibold text-gray-900">{formatRupiah(Number(item.unit) * Number(item.qty))}</p>
+                                 </div>
+                             </div>
+                         )) : (
+                              <p className="text-sm text-gray-500 italic">Tidak ada item dalam pesanan ini.</p>
+                         )}
+                     </div>
+                 </div>
 
                 {/* Ringkasan Total */}
                 <div className="p-6 bg-gray-50 border-t flex justify-end mt-2">
-                    <div className="w-full max-w-sm space-y-2">
-                        <div className="flex justify-between text-sm text-gray-600">
-                            <span>Subtotal ({items.length} item)</span>
-                            <span className="font-medium">{formatRupiah(order.total_items_price)}</span>
-                        </div>
+                     <div className="w-full max-w-sm space-y-2">
                          <div className="flex justify-between text-sm text-gray-600">
-                            <span>Ongkos Kirim</span>
-                            <span className="font-medium">{formatRupiah(order.shipping_cost)}</span>
-                        </div>
-                         {order.discount_amount > 0 && ( // Tampilkan jika ada diskon
-                            <div className="flex justify-between text-sm text-green-600">
-                                <span>Diskon</span>
-                                <span className="font-medium">-{formatRupiah(order.discount_amount)}</span>
-                            </div>
+                            <span>Subtotal ({normalizedItems.length} item)</span>
+                             <span className="font-medium">{formatRupiah(subtotalItems)}</span>
+                         </div>
+                         <div className="flex justify-between text-sm text-gray-600">
+                             <span>Ongkos Kirim</span>
+                             <span className="font-medium">{formatRupiah(shippingCost)}</span>
+                         </div>
+                         {discountAmount > 0 && (
+                             <div className="flex justify-between text-sm text-green-600">
+                                 <span>Diskon</span>
+                                 <span className="font-medium">-{formatRupiah(discountAmount)}</span>
+                             </div>
                          )}
                          <div className="flex justify-between text-lg font-bold text-gray-900 pt-3 border-t mt-2">
-                            <span>Total Pesanan</span>
-                            <span>{formatRupiah(order.final_amount)}</span>
-                        </div>
-                    </div>
-                </div>
+                             <span>Total Pesanan</span>
+                             <span>{formatRupiah(finalAmount)}</span>
+                         </div>
+                     </div>
+                 </div>
             </div>
         </div>
     );
