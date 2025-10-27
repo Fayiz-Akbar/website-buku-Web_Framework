@@ -25,6 +25,9 @@ use App\Http\Controllers\Api\PublisherController;
 // Import Controller Riwayat Pesanan
 use App\Http\Controllers\Api\UserOrderController;
 use App\Http\Controllers\Api\AdminDashboardController; // Tambahkan ini
+use App\Http\Controllers\Admin\AuthorAdminController;
+use App\Http\Controllers\Admin\CategoryAdminController;
+use App\Http\Controllers\Admin\PublisherAdminController;
 // =================================================================
 
 
@@ -138,5 +141,9 @@ Route::middleware(['auth:sanctum', 'admin'])
                 'user' => $request->user(),
             ]);
         });
+
+        Route::get('/authors', [AuthorAdminController::class, 'index']);
+        Route::get('/categories', [CategoryAdminController::class, 'index']);
+        Route::get('/publishers', [PublisherAdminController::class, 'index']);
     });
 

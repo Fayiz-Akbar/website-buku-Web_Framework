@@ -63,6 +63,7 @@ function App() {
               <Route path="/admin/dashboard" element={<DashboardPage />} />
               <Route path="/admin/books" element={<BookListPage />} />
               <Route path="/admin/books/new" element={<BookFormPage />} />
+              <Route path="/admin/books/create" element={<BookFormPage />} />
               <Route path="/admin/books/edit/:id" element={<BookFormPage />} />
               <Route path="/admin/categories" element={<CategoryListPage />} />
               <Route path="/admin/categories/new" element={<CategoryFormPage />} />
