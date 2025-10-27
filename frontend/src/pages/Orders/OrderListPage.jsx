@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+// FIX KRITIS: Ganti axios dengan apiAuth
+import { apiAuth } from '../../api/axios'; // Pastikan path ini benar!
 
-const API_URL = 'http://localhost:8000/api/admin/orders';
+const API_ENDPOINT = '/admin/orders';
 
 export default function OrderListPage() {
     const [orders, setOrders] = useState([]);
@@ -12,19 +13,32 @@ export default function OrderListPage() {
     const [error, setError] = useState(null);
     
     const [searchParams, setSearchParams] = useSearchParams();
-    const paymentStatusFilter = searchParams.get('payment_status') || 'pending';
+    const paymentStatusFilter = searchParams.get('payment_status') || 'pending'; 
 
+    const formatRupiah = (number) => {
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0
+        }).format(number || 0);
+    };
+    
     const fetchOrders = async (status) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await axios.get(API_URL, {
+            // FIX KRITIS: Gunakan apiAuth.get()
+            const response = await apiAuth.get(API_ENDPOINT, {
                 params: { payment_status: status }
             });
             setOrders(response.data.data); // data paginasi
         } catch (err) {
             console.error("Error fetching orders:", err);
-            setError("Gagal mengambil data pesanan.");
+            if (err.response && err.response.status >= 400) {
+                 setError("Gagal mengambil data pesanan. Pastikan token Admin valid.");
+            } else {
+                 setError("Gagal mengambil data pesanan. Cek koneksi.");
+            }
         } finally {
             setLoading(false);
         }
@@ -48,17 +62,17 @@ export default function OrderListPage() {
             <div className="mb-4 flex space-x-2">
                 <button 
                     onClick={() => handleFilterChange('pending')} 
-                    className={`py-2 px-4 rounded ${paymentStatusFilter === 'pending' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>
+                    className={`py-2 px-4 rounded ${paymentStatusFilter === 'pending' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}>
                     Menunggu Konfirmasi
                 </button>
                 <button 
                     onClick={() => handleFilterChange('success')} 
-                    className={`py-2 px-4 rounded ${paymentStatusFilter === 'success' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}>
+                    className={`py-2 px-4 rounded ${paymentStatusFilter === 'success' ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
                     Berhasil
                 </button>
                 <button 
                     onClick={() => handleFilterChange('failed')} 
-                    className={`py-2 px-4 rounded ${paymentStatusFilter === 'failed' ? 'bg-red-500 text-white' : 'bg-gray-200'}`}>
+                    className={`py-2 px-4 rounded ${paymentStatusFilter === 'failed' ? 'bg-red-600 text-white' : 'bg-gray-200'}`}>
                     Ditolak/Batal
                 </button>
             </div>
@@ -80,21 +94,21 @@ export default function OrderListPage() {
                         <tr key={order.id} className="hover:bg-gray-50">
                             <td className="py-3 px-4 font-mono">{order.order_code}</td>
                             <td className="py-3 px-4">{order.user?.name || 'N/A'}</td>
-                            <td className="py-3 px-4">Rp {new Intl.NumberFormat('id-ID').format(order.total_amount)}</td>
+                            <td className="py-3 px-4">{formatRupiah(order.total_amount)}</td>
                             <td className="py-3 px-4">{order.status}</td>
                             <td className="py-3 px-4">{order.payment?.status || 'N/A'}</td>
                             <td className="py-3 px-4">{new Date(order.created_at).toLocaleString('id-ID')}</td>
                             <td className="py-3 px-4">
                                 <Link 
                                     to={`/admin/orders/${order.id}`} 
-                                    className="bg-blue-500 text-white px-3 py-1 rounded text-sm"
+                                    className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
                                 >
                                     Detail
                                 </Link>
                             </td>
                         </tr>
                     )) : (
-                        <tr><td colSpan="7" className="text-center py-4">Tidak ada data.</td></tr>
+                        <tr><td colSpan="7" className="text-center py-4">Tidak ada pesanan dengan status "{paymentStatusFilter}".</td></tr>
                     )}
                 </tbody>
             </table>

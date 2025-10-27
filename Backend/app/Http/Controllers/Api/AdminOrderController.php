@@ -1,4 +1,5 @@
 <?php
+// File: Backend/app/Http/Controllers/Api/AdminOrderController.php
 
 namespace App\Http\Controllers\Api;
 
@@ -12,17 +13,23 @@ class AdminOrderController extends Controller
 {
     /**
      * Menampilkan daftar semua pesanan.
-     * GET /api/admin/orders
      */
     public function index(Request $request)
     {
-        $query = Order::with(['user', 'payment'])
-                       ->orderBy('created_at', 'desc');
+        // FIX KRITIS: Eager Loading yang Paling Aman
+        $query = Order::with([
+                       'user', 
+                       'payment',
+                       'address',
+                       // Memuat items dan semua relasi buku yang dibutuhkan
+                       'items.book' => function ($query) {
+                           // Memuat relasi bersarang di sini
+                           $query->with(['authors', 'publisher', 'categories']);
+                       }
+                   ])
+                   ->orderBy('created_at', 'desc');
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
-        
+        // Filter untuk status pembayaran (menunggu_validasi, success, failed)
         if ($request->has('payment_status')) {
             $query->whereHas('payment', function ($q) use ($request) {
                 $q->where('status', $request->payment_status);
@@ -36,22 +43,27 @@ class AdminOrderController extends Controller
 
     /**
      * Menampilkan detail satu pesanan.
-     * GET /api/admin/orders/{id}
      */
     public function show(Order $order)
     {
-        // SUDAH DISESUAIKAN: Menggunakan relasi 'address'
-        $order->load(['user', 'address', 'payment', 'items', 'items.book']);
+        // FIX KRITIS: Eager Loading yang Paling Aman untuk detail
+        $order->load([
+            'user', 
+            'address', 
+            'payment', 
+            'items', 
+            'items.book' => function ($query) {
+                $query->with(['authors', 'publisher', 'categories']);
+            }
+        ]);
         
         return OrderResource::make($order);
     }
-
-    /**
-     * Menyetujui pembayaran pesanan.
-     * POST /api/admin/orders/{id}/approve
-     */
+    
+    // (Metode approve dan reject sama seperti sebelumnya)
     public function approve(Order $order)
     {
+        // ... (Logika sama)
         if (!$order->payment) {
             return response()->json(['message' => 'Pesanan ini tidak memiliki data pembayaran.'], 422);
         }
@@ -69,12 +81,9 @@ class AdminOrderController extends Controller
         return response()->json(['message' => 'Pesanan berhasil disetujui.']);
     }
 
-    /**
-     * Menolak pembayaran pesanan.
-     * POST /api/admin/orders/{id}/reject
-     */
     public function reject(Request $request, Order $order)
     {
+        // ... (Logika sama)
         $request->validate(['reason' => 'required|string|max:255']);
         
         if (!$order->payment) {

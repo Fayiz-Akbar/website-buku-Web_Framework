@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\CheckoutController;
 use App\Http\Controllers\Api\PublisherController;
 // Import Controller Riwayat Pesanan
 use App\Http\Controllers\Api\UserOrderController;
+use App\Http\Controllers\Api\AdminDashboardController; // Tambahkan ini
 // =================================================================
 
 
@@ -101,6 +102,9 @@ Route::middleware(['auth:sanctum', 'admin'])
     ->prefix('admin')
     ->group(function () {
 
+        // FIX KRITIS: Rute Dashboard Admin
+        Route::get('/stats', [AdminDashboardController::class, 'stats']); // <-- FIX 404 NOT FOUND
+        
         // 🗂️ CRUD Kategori (Menggunakan kontroler Admin)
         Route::apiResource('/categories', AdminCategoryController::class);
 
