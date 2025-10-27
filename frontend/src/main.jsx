@@ -7,7 +7,8 @@ import './index.css';
 import { AuthProvider } from './Context/AuthContext';
 // --- IMPORT BARU ---
 import { WishlistProvider } from './Context/WishlistContext'; 
-import { CartProvider } from './Context/CartContext.jsx'
+import { CartProvider } from './Context/CartContext.jsx';
+import { ToastProvider } from './components/Toast/ToastProvider.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -16,7 +17,9 @@ createRoot(document.getElementById('root')).render(
         {/* --- Bungkus dengan WishlistProvider --- */}
         <WishlistProvider> 
           <CartProvider>
-            <App />
+            <ToastProvider>
+              <App />
+            </ToastProvider>
           </CartProvider>
         </WishlistProvider>
         {/* --- Batas --- */}

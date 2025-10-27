@@ -14,7 +14,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 
 import { useCart } from '../Context/CartContext'; 
-import { useAuth } from './../context/AuthContext';
+import { useAuth } from './../Context/AuthContext';
 
 // Import Swiper styles
 import 'swiper/css';
@@ -66,8 +66,7 @@ function CategoryCard({ category }) {
 
     return (
         <Link
-            to={`/category/${category.id}`} 
-            // [PERBAIKAN HOVER] Hover lebih halus, tidak ganti background gradient
+            to={`/categories/${category.id}/books`} 
             className="flex flex-col items-center justify-center p-4 bg-white rounded-xl shadow-sm border border-gray-200 text-center group hover:shadow-md hover:border-blue-300 transition-all duration-300 transform hover:-translate-y-1 h-full"
         >
             <div className={`p-3 rounded-full mb-3 transition-all duration-300 ${config.bgIcon} ${config.color} group-hover:bg-blue-100 group-hover:text-blue-600`}>

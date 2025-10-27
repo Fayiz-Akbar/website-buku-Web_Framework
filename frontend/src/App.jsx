@@ -87,6 +87,7 @@ function App() {
             <Route path="/books" element={<BookCatalogPage />} />
             <Route path="/books/:id" element={<BookDetailPage />} />
             <Route path="/categories/:id/books" element={<CategoryBooksPage />} />
+            <Route path="/category/:id" element={<CategoryBooksPage />} />
         </Route>
 
         {/* Halaman Not Found (Paling Akhir) */}

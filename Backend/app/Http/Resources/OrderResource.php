@@ -5,38 +5,69 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-// Import resource lain yang kita butuhkan
-use App\Http\Resources\UserResource;
-use App\Http\Resources\UserAddressResource;
-use App\Http\Resources\PaymentResource;
-use App\Http\Resources\OrderItemResource;
+use Illuminate\Support\Facades\Storage; // penting untuk URL publik
 
 class OrderResource extends JsonResource
 {
+    /**
+     * Transform the resource into an array.
+     */
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'order_code' => $this->order_code,
-            'status' => $this->status,
-            
-            // FIX KRITIS: Menyediakan final_amount untuk kunci 'total_amount' (diperlukan list view)
-            'total_amount' => $this->final_amount, 
-            // Menyediakan final_amount untuk kunci 'final_amount' (diperlukan detail view)
-            'final_amount' => $this->final_amount, 
-            
-            // Kolom harga lain yang mungkin dibutuhkan detail view
-            'total_items_price' => $this->total_items_price,
-            'shipping_cost' => $this->shipping_cost,
-            'discount_amount' => $this->discount_amount,
-            
-            'created_at' => $this->created_at,
-            
-            // Data relasi (sudah defensif)
-            'user' => new UserResource($this->whenLoaded('user')),
-            'address' => new UserAddressResource($this->whenLoaded('address')), 
-            'payment' => new PaymentResource($this->whenLoaded('payment')),
-            'items' => OrderItemResource::collection($this->whenLoaded('items')),
+            'id'           => $this->id,
+            'order_code'   => $this->order_code,
+            'status'       => $this->status,
+            'created_at'   => $this->created_at,
+            'final_amount' => $this->final_amount,
+            'total_amount' => $this->final_amount, // alias untuk FE lama
+
+            'user' => $this->whenLoaded('user', function () {
+                return [
+                    'id'    => $this->user->id,
+                    'name'  => $this->user->name,
+                    'email' => $this->user->email,
+                ];
+            }),
+
+            'address' => $this->whenLoaded('address', function () {
+                return [
+                    'id'             => $this->address->id,
+                    'recipient_name' => $this->address->recipient_name ?? null,
+                    'phone_number'   => $this->address->phone_number ?? null, // gunakan kolom yang benar
+                    'address_line'   => $this->address->address_line ?? null,
+                    'city'           => $this->address->city ?? null,
+                    'province'       => $this->address->province ?? null,
+                    'postal_code'    => $this->address->postal_code ?? null,
+                ];
+            }),
+
+            'payment' => $this->whenLoaded('payment', function () {
+                return [
+                    'id'                => $this->payment->id,
+                    'status'            => $this->payment->status,
+                    'method'            => $this->payment->method ?? null,
+                    'confirmed_at'      => $this->payment->confirmed_at,
+                    'payment_proof_url' => $this->payment->payment_proof_url
+                        ? Storage::url($this->payment->payment_proof_url)   // kembalikan URL publik
+                        : null,
+                    'admin_notes'       => $this->payment->admin_notes ?? null,
+                ];
+            }),
+
+            'items' => $this->whenLoaded('items', function () {
+                return $this->items->map(function ($item) {
+                    return [
+                        'id'       => $item->id,
+                        'quantity' => $item->quantity,
+                        'price'    => $item->price,
+                        'book'     => [
+                            'id'    => $item->book->id ?? null,
+                            'title' => $item->book->title ?? null,
+                        ],
+                    ];
+                });
+            }),
         ];
     }
 }

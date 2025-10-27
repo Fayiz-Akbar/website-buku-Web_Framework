@@ -129,7 +129,7 @@ export default function CategoryBooksPage() {
                 {allCategories.map((cat) => (
                   <Link
                     key={cat.id}
-                    to={`/category/${cat.id}`}
+                    to={`/categories/${cat.id}/books`}
                     className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group ${
                       cat.id == id
                         ? 'bg-blue-600 text-white shadow-sm scale-[1.02]'

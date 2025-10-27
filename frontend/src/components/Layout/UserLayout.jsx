@@ -225,7 +225,7 @@ export default function UserLayout() {
             {categories.slice(0, 7).map((category) => (
               <Link
                 key={category.id}
-                to={`/category/${category.id}`}
+                to={`/categories/${category.id}/books`}
                 className="font-medium text-gray-700 hover:text-blue-600 transition-colors"
               >
                 {category.name}
@@ -273,7 +273,7 @@ export default function UserLayout() {
              <ul className="space-y-2 text-sm">
                 {categories.slice(0, 4).map((cat) => (
                    <li key={cat.id}>
-                     <Link to={`/category/${cat.id}`} className="text-gray-400 hover:text-white">
+                     <Link to={`/categories/${cat.id}/books`} className="text-gray-400 hover:text-white">
                        {cat.name}
                      </Link>
                    </li>

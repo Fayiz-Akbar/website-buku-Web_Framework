@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Star, Heart, ShoppingCart } from 'lucide-react'; 
 import { useWishlist } from '../../Context/WishlistContext';
 import { useCart } from '../../Context/CartContext'; 
+import { useToast } from '../Toast/ToastProvider';
 
 // Helper format Rupiah
 const formatRupiah = (number) => {
@@ -23,6 +24,7 @@ const formatRupiah = (number) => {
 export default function BookCard({ book }) {
     const { toggleWishlist, isInWishlist } = useWishlist(); 
     const { addToCart } = useCart(); 
+    const { success, error } = useToast();
     const isFavorite = isInWishlist(book.id);
 
     // [FIX] Menggunakan 'authors' (array) dan 'full_name' atau 'name'
@@ -37,9 +39,15 @@ export default function BookCard({ book }) {
         toggleWishlist(book);
     };
 
-    const handleAddToCart = (e) => {
+    const handleAddToCart = async (e) => {
         e.preventDefault(); // Mencegah navigasi ke detail buku
-        addToCart(book.id); // Panggil fungsi dari CartContext
+        try {
+            await Promise.resolve(addToCart(book.id));
+            success(`"${book.title}" ditambahkan ke keranjang`);
+        } catch (err) {
+            console.error(err);
+            error('Gagal menambahkan ke keranjang');
+        }
     };
     
     const placeholderImage = `https://placehold.co/300x400/e2e8f0/64748b?text=${book.title.split(' ').slice(0,3).join('+')}`;

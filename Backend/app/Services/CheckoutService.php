@@ -7,12 +7,8 @@ use App\Models\User;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Book;
-use App\Events\OrderProcessed;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Exception;
 
 class CheckoutService
 {
@@ -45,10 +41,7 @@ class CheckoutService
         $order = DB::transaction(function () use ($user, $cart, $data, $selectedCartItems) {
 
             // 3. Hitung total harga HANYA dari item yang dipilih
-            $totalPrice = $selectedCartItems->sum(function ($item) {
-                return $item->price * $item->quantity;
-            });
-            
+            $totalPrice = $selectedCartItems->sum(fn($item) => $item->price * $item->quantity);
             $shippingCost = 15000; 
 
             // 4. Simpan file bukti pembayaran
@@ -74,7 +67,7 @@ class CheckoutService
                 'order_id' => $order->id,
                 'method' => 'qris_manual',
                 
-                'status' => 'waiting_validation', 
+                'status' => 'pending', // konsisten dengan FE/admin filter
                 
                 'amount_due' => $order->final_amount, 
                 'amount_paid' => $data['amount_paid'], 
@@ -108,7 +101,6 @@ class CheckoutService
             return $order;
         });
 
-        $order->load('payment'); 
-        return $order;
+        return $order->load('payment'); 
     }
 }
