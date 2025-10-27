@@ -15,9 +15,9 @@ const AUTHORS_ENDPOINT = '/admin/authors';
 const PUBLISHERS_ENDPOINT = '/admin/publishers';
 
 export default function BookFormPage() {
-    const { id } = useParams();
-    const navigate = useNavigate();
-    const isEdit = !!id;
+  const { id } = useParams(); // id buku jika edit
+  const navigate = useNavigate();
+  const isEdit = !!id;
 
     const [formData, setFormData] = useState({
         title: '',
@@ -75,10 +75,11 @@ export default function BookFormPage() {
 
     // --- FETCH DATA BUKU JIKA EDIT ---
     const fetchBook = async () => {
+        if (!isEdit) return;
         setLoading(true);
         try {
-            // Menggunakan apiAuth untuk GET detail buku
-            const response = await apiAuth.get(`/books/${id}`);
+            // FIX: gunakan endpoint admin
+            const response = await apiAuth.get(`${BOOK_ENDPOINT}/${id}`);
             const bookData = response.data.data;
 
             setFormData({
@@ -86,11 +87,11 @@ export default function BookFormPage() {
                 price: bookData.price || '',
                 stock: bookData.stock || '',
                 description: bookData.description || '',
-                publisher_id: bookData.publisher?.id || '',
+                publisher_id: String(bookData.publisher?.id ?? bookData.publisher_id ?? ''),
                 cover_image: null,
-                cover_image_url: bookData.cover_url || '',
-                authors: bookData.authors?.map(a => a.id) || [],
-                categories: bookData.categories?.map(c => c.id) || [],
+                cover_image_url: bookData.cover_url || bookData.cover || '',
+                authors: (bookData.authors?.map(a => String(a.id)) || (bookData.author_id ? [String(bookData.author_id)] : [])),
+                categories: (bookData.categories?.map(c => String(c.id)) || (bookData.category_id ? [String(bookData.category_id)] : [])),
             });
         } catch (err) {
             console.error("Failed to fetch book data:", err);
@@ -102,10 +103,8 @@ export default function BookFormPage() {
 
     useEffect(() => {
         fetchRelations();
-        if (isEdit) {
-            fetchBook();
-        }
-    }, [isEdit, id]);
+        fetchBook();
+    }, [id]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -139,15 +138,15 @@ export default function BookFormPage() {
         setFormError(null);
         setIsSubmitting(true);
 
-        const apiMethod = isEdit ? 'post' : 'post'; // Menggunakan POST untuk multipart/form-data
-        const apiUrl = isEdit ? `${BOOK_ENDPOINT}/${id}?_method=PUT` : BOOK_ENDPOINT; // Spoofing PUT/PATCH
+        // Selalu POST, spoof PUT via body FormData
+        const apiMethod = 'post';
+        const apiUrl = isEdit ? `${BOOK_ENDPOINT}/${id}` : BOOK_ENDPOINT;
 
         // Mempersiapkan FormData untuk file dan data relasi
         const data = new FormData();
         Object.keys(formData).forEach(key => {
             if (key === 'authors' || key === 'categories') {
-                // Menangani array untuk Laravel
-                formData[key].forEach(val => data.append(`${key}[]`, val));
+                formData[key].forEach(val => data.append(`${key}[]`, String(val)));
             } else if (key === 'cover_image' && formData[key]) {
                 data.append(key, formData[key]);
             } else if (formData[key] !== null) {
@@ -160,18 +159,18 @@ export default function BookFormPage() {
             data.delete('cover_image_url');
         }
 
+        // Spoof PUT di body untuk Laravel
+        if (isEdit) {
+            data.append('_method', 'PUT');
+        }
 
         try {
-            // FIX KRITIS: Menggunakan apiAuth
             await apiAuth({
                 method: apiMethod,
                 url: apiUrl,
                 data: data,
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
+                headers: { 'Content-Type': 'multipart/form-data' },
             });
-
             toast.success(`Buku berhasil di-${isEdit ? 'perbarui' : 'tambahkan'}!`);
             navigate('/admin/books');
         } catch (err) {
