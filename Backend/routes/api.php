@@ -104,7 +104,7 @@ Route::middleware(['auth:sanctum', 'admin'])
 
         // FIX KRITIS: Rute Dashboard Admin
         Route::get('/stats', [AdminDashboardController::class, 'stats']); // <-- FIX 404 NOT FOUND
-        
+
         // 🗂️ CRUD Kategori (Menggunakan kontroler Admin)
         Route::apiResource('/categories', AdminCategoryController::class);
 
@@ -124,6 +124,12 @@ Route::middleware(['auth:sanctum', 'admin'])
         Route::get('/orders/{order}', [AdminOrderController::class, 'show']);
         Route::post('/orders/{order}/approve', [AdminOrderController::class, 'approve']);
         Route::post('/orders/{order}/reject', [AdminOrderController::class, 'reject']);
+
+        // 🧾 Riwayat Pesanan Pengguna
+        Route::get('/my-orders', [UserOrderController::class, 'index']);
+        Route::get('/my-orders/{order}', [UserOrderController::class, 'show']);
+        // RUTE BARU UNTUK UPLOAD BUKTI BAYAR
+        Route::post('/my-orders/{order}/upload-proof', [UserOrderController::class, 'uploadPaymentProof']); 
 
         // 🧪 Tes Admin
         Route::get('/test', function (Request $request) {

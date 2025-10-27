@@ -18,18 +18,18 @@ class AdminOrderController extends Controller
     {
         // FIX KRITIS: Eager Loading yang Paling Aman
         $query = Order::with([
-                       'user', 
-                       'payment',
-                       'address',
-                       // Memuat items dan semua relasi buku yang dibutuhkan
-                       'items.book' => function ($query) {
-                           // Memuat relasi bersarang di sini
-                           $query->with(['authors', 'publisher', 'categories']);
-                       }
-                   ])
-                   ->orderBy('created_at', 'desc');
+                         'user', 
+                         'payment',
+                         'address',
+                         // Memuat items dan semua relasi buku yang dibutuhkan
+                         'items.book' => function ($query) {
+                             // Memuat relasi bersarang di sini
+                             $query->with(['authors', 'publisher', 'categories']);
+                         }
+                     ])
+                     ->orderBy('created_at', 'desc');
 
-        // Filter untuk status pembayaran (menunggu_validasi, success, failed)
+        // Filter untuk status pembayaran (pending, success, failed)
         if ($request->has('payment_status')) {
             $query->whereHas('payment', function ($q) use ($request) {
                 $q->where('status', $request->payment_status);
@@ -60,45 +60,69 @@ class AdminOrderController extends Controller
         return OrderResource::make($order);
     }
     
-    // (Metode approve dan reject sama seperti sebelumnya)
+    // =================================================================
+    // LOGIKA BARU: VERIFIKASI PEMBAYARAN OLEH ADMIN
+    // =================================================================
+
+    /**
+     * Menyetujui Pembayaran dan Mengubah Status Pesanan.
+     */
     public function approve(Order $order)
     {
-        // ... (Logika sama)
         if (!$order->payment) {
             return response()->json(['message' => 'Pesanan ini tidak memiliki data pembayaran.'], 422);
         }
 
+        // Periksa apakah bukti bayar sudah diunggah sebelum disetujui
+        if (empty($order->payment->payment_proof_url)) {
+            return response()->json(['message' => 'Bukti pembayaran belum diunggah oleh user.'], 403);
+        }
+        
+        // 1. Update status pembayaran
         $order->payment->update([
             'status' => 'success',
             'confirmed_at' => now(),
-            'admin_notes' => 'Pembayaran dikonfirmasi oleh admin.'
+            'admin_notes' => 'Pembayaran disetujui. Barang segera diproses.'
         ]);
         
+        // 2. Update status order untuk user
+        // Status: 'pembayaran disetujui, siap dikirim'
         $order->update([
-            'status' => 'diproses',
+            'status' => 'diproses', 
         ]);
 
-        return response()->json(['message' => 'Pesanan berhasil disetujui.']);
+        // FIX: Trigger event untuk mengurangi stok jika menggunakan event listener
+        // event(new OrderProcessed($order));
+
+        return response()->json([
+            'message' => 'Pesanan berhasil disetujui. Status Pembayaran: success, Status Order: diproses.'
+        ], 200);
     }
 
+    /**
+     * Menolak Pembayaran dan Mengubah Status Pesanan menjadi Dibatalkan.
+     */
     public function reject(Request $request, Order $order)
     {
-        // ... (Logika sama)
         $request->validate(['reason' => 'required|string|max:255']);
         
         if (!$order->payment) {
             return response()->json(['message' => 'Pesanan ini tidak memiliki data pembayaran.'], 422);
         }
 
+        // 1. Update status pembayaran
         $order->payment->update([
             'status' => 'failed',
             'admin_notes' => 'Pembayaran ditolak: ' . $request->reason,
         ]);
         
+        // 2. Update status order
         $order->update([
-            'status' => 'dibatalkan',
+            'status' => 'dibatalkan', 
         ]);
 
-        return response()->json(['message' => 'Pesanan berhasil ditolak.']);
+        return response()->json([
+            'message' => 'Pesanan berhasil ditolak. Status Pembayaran: failed, Status Order: dibatalkan.'
+        ], 200);
     }
 }
