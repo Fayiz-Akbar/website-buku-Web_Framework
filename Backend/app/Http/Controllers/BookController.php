@@ -116,8 +116,8 @@ class BookController extends Controller
         if ($request->filled('authors'))    $book->authors()->sync((array) $request->input('authors'));
         if ($request->filled('categories')) $book->categories()->sync((array) $request->input('categories'));
 
-        $book->load(['authors','publisher','categories']);
-        return response()->json(['data' => $this->mapBook($book)], 201);
+        $book->load(['author:id,name', 'category:id,name']);
+        return response()->json($book, 201);
     }
 
     // PUT /api/books/{book}
@@ -155,19 +155,50 @@ class BookController extends Controller
         if ($request->filled('authors'))    $book->authors()->sync((array) $request->input('authors'));
         if ($request->filled('categories')) $book->categories()->sync((array) $request->input('categories'));
 
-        $book->load(['authors','publisher','categories']);
-        return response()->json(['data' => $this->mapBook($book)]);
+        $book->load(['author:id,name', 'category:id,name']);
+        return response()->json($book);
     }
 
     // DELETE /api/books/{book}
+    // Soft delete (TIDAK menghapus file cover)
     public function destroy(Book $book)
     {
-        $old = $book->cover_image_url ?? $book->cover_image ?? $book->cover ?? null;
-        if ($old && !preg_match('/^https?:\/\//i', $old)) {
-            try { Storage::disk('public')->delete($old); } catch (\Throwable $e) {}
-        }
         $book->delete();
-        return response()->json(['message' => 'Deleted']);
+        return response()->json(['message' => 'Buku berhasil dihapus (soft delete)'], 200);
+    }
+
+    // Pulihkan buku terhapus
+    public function restore($id)
+    {
+        $book = Book::withTrashed()->findOrFail($id);
+        $book->restore();
+        return response()->json(['message' => 'Buku dipulihkan'], 200);
+    }
+
+    // Hapus permanen + hapus file cover (opsional, untuk menu Trash)
+    public function forceDestroy($id)
+    {
+        $book = Book::withTrashed()->findOrFail($id);
+
+        // Hapus file cover hanya saat force delete
+        $coverPath = $book->cover ?? $book->cover_path ?? $book->cover_image ?? null;
+        if ($coverPath) {
+            if (Str::startsWith($coverPath, ['http://', 'https://'])) {
+                $parsed = parse_url($coverPath);
+                $path = $parsed['path'] ?? '';
+                $prefix = '/storage/';
+                if ($path && str_contains($path, $prefix)) {
+                    $relative = ltrim(substr($path, strpos($path, $prefix) + strlen($prefix)), '/');
+                    Storage::disk('public')->delete($relative);
+                }
+            } else {
+                $relative = ltrim(preg_replace('/^\/?storage\/?/i', '', $coverPath), '/');
+                Storage::disk('public')->delete($relative);
+            }
+        }
+
+        $book->forceDelete();
+        return response()->json(['message' => 'Buku dihapus permanen'], 200);
     }
 
     // GET /api/categories/{id}/books

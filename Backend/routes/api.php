@@ -147,3 +147,10 @@ Route::middleware(['auth:sanctum', 'admin'])
         Route::get('/publishers', [PublisherAdminController::class, 'index']);
     });
 
+// RUTE BARU UNTUK BUKU
+Route::apiResource('books', BookController::class);
+
+// Soft delete helpers
+Route::patch('books/{id}/restore', [BookController::class, 'restore'])->name('books.restore');
+Route::delete('books/{id}/force', [BookController::class, 'forceDestroy'])->name('books.force-destroy');
+

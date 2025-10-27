@@ -37,32 +37,38 @@ class Book extends Model
         'stock' => 'integer',
     ];
 
-    // Accessor tunggal untuk cover URL
-    protected $appends = ['cover_url'];
+    // pastikan properti ini ada agar cover_url ikut terserialisasi ke JSON
+    protected $appends = [
+        'cover_url',
+        'author_name',
+        'category_name',
+    ];
 
-    public function getCoverUrlAttribute(): ?string
+    public function getCoverUrlAttribute()
     {
-        // Prioritas: cover_image_url -> cover_image -> cover -> cover_path
-        $path = $this->cover_image_url
-            ?? $this->cover_image
-            ?? $this->cover
-            ?? $this->cover_path
-            ?? null;
-
-        // Tidak ada path, kembalikan default
-        if (!$path || trim($path) === '') {
-            return asset('images/default-book.jpg');
+        // urutan prioritas: URL eksternal -> absolute URL -> file di storage
+        $external = $this->attributes['cover_image_url'] ?? null;
+        if ($external) {
+            return $external;
         }
 
-        $path = ltrim($path, " \t\n\r\0\x0B/");
+        $path = $this->attributes['cover_image']
+            ?? $this->attributes['cover']
+            ?? $this->attributes['cover_path']
+            ?? null;
 
-        // Jika sudah absolute URL, kembalikan langsung
+        if (!$path) {
+            return null;
+        }
+
+        // jika sudah absolute url, kembalikan apa adanya
         if (Str::startsWith($path, ['http://', 'https://'])) {
             return $path;
         }
 
-        // Jika file ada di storage, buat URL publik
-        return url(Storage::url($path));
+        // buat URL publik dari storage, lalu jadikan absolute
+        $relative = Storage::url($path);        // contoh: /storage/covers/abc.jpg
+        return url($relative);                  // contoh: http://127.0.0.1:8000/storage/covers/abc.jpg
     }
 
     // =================================================================
@@ -82,5 +88,34 @@ class Book extends Model
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class, 'book_category', 'book_id', 'category_id');
+    }
+
+    // Selalu muat relasi agar tampil di JSON (list/detail/store/update)
+    protected $with = ['author', 'category'];
+
+    // Mudahkan frontend dengan field datar
+    
+    public function author()
+    {
+        return $this->belongsTo(Author::class)->withDefault([
+            'name' => null,
+        ]);
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class)->withDefault([
+            'name' => null,
+        ]);
+    }
+
+    public function getAuthorNameAttribute()
+    {
+        return $this->author?->name;
+    }
+
+    public function getCategoryNameAttribute()
+    {
+        return $this->category?->name;
     }
 }

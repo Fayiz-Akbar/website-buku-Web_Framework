@@ -25,10 +25,11 @@ const getCoverSrc = (book) =>
   toImageUrl(book.cover_image) ||
   toImageUrl(book.image);
 
-const BookListPage = () => {
-  const [books, setBooks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+export default function BookListPage() {
+  const [books, setBooks] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+  const [deletingId, setDeletingId] = React.useState(null);
 
   const fetchBooks = async () => {
     setLoading(true);
@@ -48,15 +49,17 @@ const BookListPage = () => {
     fetchBooks();
   }, []);
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus buku ini?')) {
-      try {
-        await axios.delete(`${API_URL_ADMIN}/${id}`);
-        fetchBooks();
-      } catch (err) {
-        console.error('Error deleting book:', err);
-        alert('Gagal menghapus buku.');
-      }
+  const handleDelete = async (book) => {
+    const ok = window.confirm(`Hapus buku "${book.title}"?`);
+    if (!ok) return;
+    setDeletingId(book.id);
+    try {
+      await api.delete(`/books/${book.id}`); // soft delete
+      setBooks((prev) => prev.filter((b) => b.id !== book.id));
+    } catch (e) {
+      alert('Gagal menghapus buku. Coba lagi.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -121,19 +124,18 @@ const BookListPage = () => {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-2">
-                        <Link
-                          to={`/admin/books/edit/${book.id}`}
-                          className="text-indigo-600 hover:text-indigo-900 text-sm"
-                        >
-                          <Edit className="w-4 h-4 inline-block" />
-                          Edit
-                        </Link>
                         <button
-                          onClick={() => handleDelete(book.id)}
-                          className="text-red-600 hover:text-red-900 text-sm"
+                          onClick={() => /* navigate to edit */ {}}
+                          className="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 rounded"
                         >
-                          <Trash2 className="w-4 h-4 inline-block" />
-                          Hapus
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(book)}
+                          disabled={deletingId === book.id}
+                          className="px-3 py-1 text-sm bg-red-100 text-red-800 rounded disabled:opacity-50"
+                        >
+                          {deletingId === book.id ? 'Menghapus...' : 'Hapus'}
                         </button>
                       </div>
                     </td>
@@ -154,5 +156,3 @@ const BookListPage = () => {
     </div>
   );
 };
-
-export default BookListPage;
