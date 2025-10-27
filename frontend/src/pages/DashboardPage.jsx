@@ -236,7 +236,7 @@ export default function DashboardPage(props) {
                 </div>
 
                 {/* Bagian 2: Grafik Penjualan (Placeholder) */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-md border">
                         <h2 className="text-xl font-semibold mb-4">Grafik Penjualan Bulanan</h2>
                         <div className="text-center h-64 flex items-center justify-center text-gray-500">
@@ -244,7 +244,7 @@ export default function DashboardPage(props) {
                         </div>
                     </div>
 
-                    {/* Bagian 3: Ringkasan Terbaru (Placeholder) */}
+                    
                      <div className="bg-white p-6 rounded-lg shadow-md border">
                         <h2 className="text-xl font-semibold mb-4">Aktivitas Terbaru</h2>
                         <ul className="space-y-3 text-sm text-gray-700">
@@ -254,7 +254,7 @@ export default function DashboardPage(props) {
                             <li>[07:30] Total penjualan bulan ini mencapai target</li>
                         </ul>
                     </div>
-                </div>
+                </div> */}
             </div>
 
             <section className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
