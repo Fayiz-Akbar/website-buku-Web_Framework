@@ -42,8 +42,12 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        // Kirim email selamat datang
-        $this->phpMailerService->sendWelcomeEmail($user);
+        // Kirim email (abaikan jika gagal, tetap return 201)
+        try {
+            app(PHPMailerService::class)->sendWelcomeEmail($user->email, $user->name ?? 'User');
+        } catch (\Throwable $e) {
+            \Log::warning('Gagal kirim email register: '.$e->getMessage());
+        }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 

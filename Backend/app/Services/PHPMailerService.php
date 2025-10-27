@@ -1,56 +1,42 @@
 <?php
-// File: Backend/app/Services/PHPMailerService.php
 
 namespace App\Services;
 
 use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
-use App\Models\User; // Untuk type hinting
+use Illuminate\Support\Facades\Log;
 
-class PHPMailerService 
+class PHPMailerService
 {
-    /**
-     * Mengirim email selamat datang menggunakan PHPMailer.
-     * @param User $user
-     * @return bool
-     */
-    public function sendWelcomeEmail(User $user): bool
+    public function sendWelcomeEmail(string $toEmail, string $toName = 'User'): bool
     {
         $mail = new PHPMailer(true);
-
         try {
-            // Pengaturan Server (Kita gunakan konfigurasi Gmail)
             $mail->isSMTP();
-            $mail->Host       = env('MAIL_HOST', 'smtp.gmail.com'); 
+            $mail->Host       = env('MAIL_HOST', 'smtp.gmail.com');
             $mail->SMTPAuth   = true;
-            
-            // [PENTING] Gunakan Sandi Aplikasi Gmail
-            $mail->Username   = env('MAIL_USERNAME'); 
-            $mail->Password   = env('MAIL_PASSWORD'); 
-            
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; 
-            $mail->Port       = env('MAIL_PORT', 587);
+            $mail->Username   = env('MAIL_USERNAME');
+            $mail->Password   = env('MAIL_PASSWORD');
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS; // TLS 587
+            $mail->Port       = (int) env('MAIL_PORT', 587);
+            $mail->CharSet    = 'UTF-8';
 
-            // Pengirim (From)
-            $mail->setFrom(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME'));
+            // Opsi dev jika sertifikat lokal bermasalah:
+            // $mail->SMTPOptions = ['ssl' => ['verify_peer' => false, 'verify_peer_name' => false, 'allow_self_signed' => true]];
 
-            // Penerima (To)
-            $mail->addAddress($user->email, $user->full_name);
+            $from = env('MAIL_FROM_ADDRESS', env('MAIL_USERNAME'));
+            $fromName = env('MAIL_FROM_NAME', 'App');
+            $mail->setFrom($from, $fromName);
+            $mail->addAddress($toEmail, $toName);
 
-            // Konten Email
-            $mail->isHTML(true); 
-            $mail->Subject = 'Selamat Datang di Katalog Buku!';
-            $mail->Body    = "<h1>Selamat, {$user->full_name}!</h1>"
-                             . "<p>Akun Anda telah berhasil terdaftar di aplikasi kami. Silakan masuk untuk mulai menjelajahi koleksi buku kami.</p>";
-            $mail->AltBody = "Selamat {$user->full_name}! Akun Anda telah berhasil terdaftar di aplikasi kami.";
+            $mail->isHTML(true);
+            $mail->Subject = 'Pendaftaran Berhasil';
+            $mail->Body    = '<h3>Selamat datang!</h3><p>Akun Anda berhasil dibuat.</p>';
+            $mail->AltBody = 'Selamat datang! Akun Anda berhasil dibuat.';
 
-            $mail->send();
-            return true;
-
+            return $mail->send();
         } catch (Exception $e) {
-            // Catat error ini ke log Laravel
-            \Illuminate\Support\Facades\Log::error("PHPMailer Gagal: {$mail->ErrorInfo}");
+            Log::error('PHPMailer error: '.$e->getMessage());
             return false;
         }
     }
