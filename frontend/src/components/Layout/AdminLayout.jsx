@@ -34,7 +34,7 @@ const AdminLayout = () => {
                 <path strokeWidth="2" strokeLinecap="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <div className="font-semibold text-slate-800">Admin Toko Buku</div>
+            <div className="font-semibold text-slate-800 text-3xl">BookHaven</div>
             <div className="w-9 h-9" />
           </div>
         </header>

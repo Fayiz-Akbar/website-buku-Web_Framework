@@ -27,7 +27,7 @@ const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
     >
       <div className="h-full flex flex-col">
         <div className="px-4 py-4 border-b border-slate-800">
-          <div className="text-lg font-semibold text-white">Admin Toko Buku</div>
+          <div className="text-lg font-semibold text-white">Admin</div>
           <p className="text-xs text-slate-400">Panel administrasi</p>
         </div>
 

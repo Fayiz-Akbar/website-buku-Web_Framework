@@ -205,7 +205,7 @@ export default function DashboardPage(props) {
     return (
         <>
             <div className="space-y-8">
-                <h1 className="text-3xl font-bold text-gray-800 border-b pb-2">Dashboard Utama</h1>
+                <h1 className="text-2xl font-bold text-gray-800 border-b pb-2">Dashboard Utama</h1>
 
                 {/* Bagian 1: Kartu Statistik Penjualan & Stok */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
