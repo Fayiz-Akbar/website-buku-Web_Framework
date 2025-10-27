@@ -15,7 +15,6 @@ const Sidebar = () => {
   const navItems = [
     { name: 'Dashboard', path: '/admin/dashboard' },
     { name: 'Manajemen Buku', path: '/admin/books' },
-    { name: 'Manajemen Kategori', path: '/admin/categories' },
     { name: 'Manajemen Pesanan', path: '/admin/orders' },
   ];
 
