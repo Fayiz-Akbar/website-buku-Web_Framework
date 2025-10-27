@@ -55,7 +55,7 @@ export default function OrderDetailPage() {
   if (!order) return null;
 
   const isAwaitingVerification = order.payment?.status === 'pending' && !!order.payment?.payment_proof_url;
-  const isPaymentApproved = order.payment?.status === 'success';
+  const isPaymentApproved = order.payment?.status === 'paid';
 
   return (
     <div className="max-w-6xl mx-auto p-6 bg-white shadow-xl rounded-xl">

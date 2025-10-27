@@ -43,7 +43,7 @@ export default function OrderListPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-slate-800">Manajemen Pesanan</h1>
         <div className="flex gap-2">
-          {['pending','success','failed'].map(s => (
+          {['pending','paid','failed'].map(s => (
             <button
               key={s}
               onClick={() => setSearchParams({ payment_status: s })}

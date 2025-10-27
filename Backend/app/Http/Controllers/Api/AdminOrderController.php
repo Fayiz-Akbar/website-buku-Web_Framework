@@ -80,7 +80,7 @@ class AdminOrderController extends Controller
         
         // 1. Update status pembayaran
         $order->payment->update([
-            'status' => 'success',
+            'status' => 'paid',
             'confirmed_at' => now(),
             'admin_notes' => 'Pembayaran disetujui. Barang segera diproses.'
         ]);
