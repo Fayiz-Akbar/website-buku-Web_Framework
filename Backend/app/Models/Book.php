@@ -7,11 +7,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\SoftDeletes; 
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Book extends Model
 {
-    use HasFactory, SoftDeletes; 
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'publisher_id',
@@ -20,9 +22,12 @@ class Book extends Model
         'description',
         'page_count',
         'published_year',
-        'price', 
-        'stock', 
+        'price',
+        'stock',
         'cover_image_url',
+        'cover_image', // pastikan ini ada jika digunakan
+        'cover',
+        'cover_path',
     ];
 
     protected $casts = [
@@ -31,38 +36,37 @@ class Book extends Model
         'published_year' => 'integer',
         'stock' => 'integer',
     ];
-    
-    // FIX KRITIS #1: Tambahkan Accessor ke Model
-    // Accessor ini akan membuat kunci 'cover_url' tersedia
+
+    // Accessor tunggal untuk cover URL
+    protected $appends = ['cover_url'];
+
     public function getCoverUrlAttribute(): ?string
     {
-        $raw = $this->cover_image_url ?: null;
-        if (!$raw || trim($raw) === '') {
-            // fallback default
+        // Prioritas: cover_image_url -> cover_image -> cover -> cover_path
+        $path = $this->cover_image_url
+            ?? $this->cover_image
+            ?? $this->cover
+            ?? $this->cover_path
+            ?? null;
+
+        // Tidak ada path, kembalikan default
+        if (!$path || trim($path) === '') {
             return asset('images/default-book.jpg');
         }
 
-        $raw = ltrim($raw);
+        $path = ltrim($path, " \t\n\r\0\x0B/");
 
-        // If already absolute URL (http/https), return as-is
-        if (preg_match('#^https?://#i', $raw)) {
-            return $raw;
+        // Jika sudah absolute URL, kembalikan langsung
+        if (Str::startsWith($path, ['http://', 'https://'])) {
+            return $path;
         }
 
-        // Otherwise, treat it as a file stored on the public disk
-        $path = ltrim($raw, '/');
-        return url('storage/' . $path);
+        // Jika file ada di storage, buat URL publik
+        return url(Storage::url($path));
     }
-    
-    // FIX KRITIS #2: Tambahkan 'cover_url' ke $appends agar selalu disertakan
-    // Ini memastikan resource dapat mengaksesnya.
-    protected $appends = [
-        'cover_url', 
-    ];
-
 
     // =================================================================
-    // RELASI ELOQUENT (Sama seperti sebelumnya)
+    // RELASI ELOQUENT
     // =================================================================
 
     public function publisher(): BelongsTo

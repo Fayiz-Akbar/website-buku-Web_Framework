@@ -7,6 +7,7 @@ import axios from 'axios'; // 2. Import axios
 // 3. Definisikan URL API
 const API_URL = 'http://localhost:8000/api/books';
 const API_URL_ADMIN = 'http://localhost:8000/api/admin/books';
+const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '');
 
 const BookListPage = () => {
     // 4. Buat state untuk data, loading, dan error
@@ -87,10 +88,13 @@ const BookListPage = () => {
                                 <tr key={book.id}>
                                     {/* Tampilkan data asli dari API */}
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <img 
-                                            src={book.cover_image_url || 'https://via.placeholder.com/80x120'} 
+                                        <img
+                                            src={
+                                                book.cover_url ||
+                                                (book.cover_image ? `${API_BASE}/storage/${book.cover_image}` : '/placeholder-cover.png')
+                                            }
                                             alt={book.title}
-                                            className="w-16 h-20 object-cover rounded"
+                                            className="h-16 w-12 object-cover rounded"
                                         />
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{book.title}</td>
