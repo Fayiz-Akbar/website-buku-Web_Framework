@@ -1,10 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { apiAuth } from '../../api/axios.js';
 import { Loader2, CheckCircle, XCircle, DollarSign, Package, User, MapPin, Image, FileText, ArrowLeft } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 const API_ENDPOINT = '/admin/orders';
+
+// Tambah helper agar path relatif dari backend menjadi URL absolut
+const API_ORIGIN = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const resolveAssetUrl = (u) => {
+  if (!u) return '';
+  if (/^(https?:|data:|blob:)/i.test(String(u))) return String(u);
+  const base = API_ORIGIN.replace(/\/+$/,'');
+  let path = (`/${String(u)}`).replace(/\/+/g,'/').replace(/^\/public\//,'/');
+  if (!path.startsWith('/storage/')) path = `/storage/${path.replace(/^\/?/,'')}`;
+  return `${base}${path}`;
+};
 
 export default function OrderDetailPage() {
   const { id } = useParams();
@@ -57,6 +68,15 @@ export default function OrderDetailPage() {
   const isAwaitingVerification = order.payment?.status === 'pending' && !!order.payment?.payment_proof_url;
   const isPaymentApproved = order.payment?.status === 'paid';
 
+  // Setelah data 'order' terisi, siapkan URL bukti bayar
+  const payment = order?.payment || {};
+  const proofUrl = resolveAssetUrl(
+    payment.payment_proof_url ??
+    payment.proof_url ??
+    payment.proof ??
+    payment.proof_path
+  );
+
   return (
     <div className="max-w-6xl mx-auto p-6 bg-white shadow-xl rounded-xl">
       <Link to="/admin/orders?payment_status=pending" className="text-blue-600 hover:underline flex items-center mb-6">
@@ -71,22 +91,7 @@ export default function OrderDetailPage() {
             <DollarSign className="w-6 h-6" /> Menunggu Verifikasi Pembayaran
           </h2>
 
-          <div className="mt-4 border p-4 bg-white rounded-md">
-            <p className="font-medium flex items-center gap-1 text-gray-700 mb-2">
-              <Image className="w-5 h-5" /> Bukti Pembayaran Diunggah:
-            </p>
-            <a href={order.payment.payment_proof_url} target="_blank" rel="noopener noreferrer">
-              <img
-                src={order.payment.payment_proof_url}
-                alt="Bukti Pembayaran"
-                className="w-full max-w-xs h-auto rounded-lg shadow-lg cursor-pointer transition-transform hover:scale-[1.02] border"
-                onError={(e) => {
-                  e.currentTarget.src = 'https://placehold.co/300x200/cccccc/333333?text=Tidak+Ada+Gambar';
-                }}
-              />
-            </a>
-            <p className="text-xs text-gray-500 mt-2">Klik gambar untuk melihat ukuran penuh.</p>
-          </div>
+          
 
           <div className="mt-6 flex flex-wrap gap-3">
             <button
@@ -173,6 +178,25 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Panel Bukti Pembayaran */}
+      <section className="mt-6">
+        <h3 className="text-base font-semibold text-slate-800 mb-2">Bukti Pembayaran</h3>
+        {proofUrl ? (
+          <a href={proofUrl} target="_blank" rel="noreferrer" className="inline-block">
+            <img
+              src={proofUrl}
+              alt="Bukti pembayaran"
+              className="max-h-72 rounded border bg-slate-50"
+              onError={(e) => { e.currentTarget.src = 'https://placehold.co/600x350?text=Tidak+Ada+Gambar'; }}
+            />
+          </a>
+        ) : (
+          <div className="p-4 rounded border bg-amber-50 text-amber-700 text-sm">
+            Bukti pembayaran belum diunggah.
+          </div>
+        )}
+      </section>
     </div>
   );
 }
