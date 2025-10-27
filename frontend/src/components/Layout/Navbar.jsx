@@ -1,7 +1,7 @@
 // frontend/src/components/Layout/Navbar.jsx
 
 import React from 'react';
-import { useAuth } from '../../context/AuthContext'; // Sesuaikan path jika perlu
+import { useAuth } from '../context/AuthContext'; // Sesuaikan path jika perlu
 import { useNavigate } from 'react-router-dom';
 
 const Navbar = () => {

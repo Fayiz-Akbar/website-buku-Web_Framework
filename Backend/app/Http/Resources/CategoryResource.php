@@ -15,9 +15,9 @@ class CategoryResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            // FIX: Menggunakan whenNotNull() untuk penanganan null yang aman
-            'name' => $this->whenNotNull('name'),
-            'description' => $this->whenNotNull('description'),
+            // Perbaikan: Mengakses properti 'name' dari model ($this->name)
+            'name' => $this->name,
+            'description' => $this->whenNotNull($this->description),
             'created_at' => $this->created_at,
         ];
     }

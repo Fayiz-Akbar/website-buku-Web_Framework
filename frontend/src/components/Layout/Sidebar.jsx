@@ -1,17 +1,19 @@
+// File: frontend/src/components/Layout/Sidebar.jsx
+
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react'; // Import icon Logout
-import { useAuth } from '../../Context/AuthContext.jsx'; // Import AuthContext
+import { LogOut } from 'lucide-react'; 
+import { useAuth } from '../../Context/AuthContext.jsx'; 
 
 const Sidebar = () => {
-  const { logout } = useAuth(); // Ambil fungsi logout
+  const { logout } = useAuth(); 
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
-    navigate('/login'); // Arahkan ke halaman login setelah logout
+    navigate('/login'); 
   };
-    
+    
   const navItems = [
     { name: 'Dashboard', path: '/admin/dashboard' },
     { name: 'Manajemen Buku', path: '/admin/books' },
@@ -20,7 +22,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="w-64 fixed h-full bg-gray-800 text-white shadow-2xl p-4 flex flex-col justify-between">
+    <div className="w-64 fixed h-full bg-gray-800 text-white shadow-2xl p-4 flex flex-col justify-between z-50">
       <div>
             <h1 className="text-2xl font-semibold mb-8 text-blue-400 border-b border-gray-700 pb-4">
                 Admin Toko Buku

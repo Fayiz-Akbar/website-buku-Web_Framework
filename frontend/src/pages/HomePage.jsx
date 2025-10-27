@@ -9,25 +9,22 @@ import {
     Sparkles, TrendingUp
 } from 'lucide-react';
 
-// Import Swiper React components and modules
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation, Autoplay } from 'swiper/modules';
 
 import { useCart } from '../Context/CartContext'; 
-import { useAuth } from './../context/AuthContext';
+import { useAuth } from '../Context/AuthContext';
 
-// Import Swiper styles
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
 import BookCard from '../components/Layout/BookCard'; 
 
-// --- Komponen Kartu Kategori (Hover Disederhanakan) ---
 function CategoryCard({ category }) {
     const getCategoryConfig = (categoryName) => {
         const name = categoryName?.toLowerCase() || '';
-        const iconClass = "w-8 h-8"; // Ukuran ikon
+        const iconClass = "w-8 h-8"; 
         switch (name) {
             case 'teknologi':
                 return { 

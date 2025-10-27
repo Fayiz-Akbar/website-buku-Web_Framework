@@ -20,4 +20,4 @@ class AuthorResource extends JsonResource
             // Kita bisa sembunyikan 'bio', 'created_at', dll.
         ];
     }
-}
+}    

@@ -15,9 +15,12 @@ class PublisherResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            // FIX: Menggunakan whenNotNull() untuk penanganan null yang aman
-            'name' => $this->whenNotNull('name'),
-            'description' => $this->whenNotNull('description'),
+            // Perbaikan: Mengakses properti 'name' dari model ($this->name)
+            // Menggunakan whenNotNull($this->name) hanya jika Anda ingin properti 'name' 
+            // TIDAK muncul dalam JSON sama sekali jika nilainya null. 
+            // Karena nama harus ada, kita gunakan langsung $this->name.
+            'name' => $this->name, 
+            'description' => $this->whenNotNull($this->description),
             'created_at' => $this->created_at,
         ];
     }

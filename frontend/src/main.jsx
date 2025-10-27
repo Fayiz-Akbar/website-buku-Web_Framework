@@ -1,5 +1,5 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App'; 
 import './index.css';
@@ -9,8 +9,8 @@ import { AuthProvider } from './Context/AuthContext';
 import { WishlistProvider } from './Context/WishlistContext'; 
 import { CartProvider } from './Context/CartContext.jsx'
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
     <BrowserRouter> 
       <AuthProvider> 
         {/* --- Bungkus dengan WishlistProvider --- */}
@@ -22,5 +22,5 @@ createRoot(document.getElementById('root')).render(
         {/* --- Batas --- */}
       </AuthProvider>
     </BrowserRouter>
-  </StrictMode>,
+  </React.StrictMode>
 );

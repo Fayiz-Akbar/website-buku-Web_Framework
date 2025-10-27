@@ -1,30 +1,26 @@
-// File: frontend/src/components/Layout/AdminGuard.jsx (Contoh Perbaikan)
+// File: frontend/src/components/Layout/AdminGuard.jsx
 
 import React from 'react';
-// FIX: Pastikan useNavigate di-import
-import { Navigate, Outlet, useNavigate } from 'react-router-dom'; 
+import { Navigate, Outlet } from 'react-router-dom'; 
 import { useAuth } from '../../Context/AuthContext.jsx'; // Sesuaikan path
 
-// Gunakan named export jika AdminGuard diexport sebagai const
-export const AdminGuard = ({ children }) => {
+// Hapus { children } dari props, karena kita akan gunakan <Outlet />
+export const AdminGuard = () => {
     const { user, isLoggedIn } = useAuth();
-    // FIX: Gunakan hook useNavigate di dalam fungsi komponen
-    const navigate = useNavigate(); 
 
+    // Cek ini bisa jadi tidak perlu jika AdminGuard selalu di dalam AuthGuard,
+    // tapi lebih aman jika ada.
     if (!isLoggedIn) {
-        // Ini seharusnya sudah di-handle oleh AuthGuard
         return <Navigate to="/login" replace />; 
     }
 
+    // Jika user ada TAPI bukan admin, tendang ke halaman utama
     if (user && user.role !== 'admin') {
-        // Redirect non-admin ke homepage
-        // FIX: Gunakan navigate yang sudah dideklarasikan
         return <Navigate to="/" replace />; 
     }
 
-    // Jika user adalah admin, tampilkan children
-    return children ? children : <Outlet />;
+    // Jika user adalah admin, izinkan akses ke rute anak (halaman admin)
+    return <Outlet />;
 };
 
-// Jika AdminGuard diexport default, gunakan ini
-// export default AdminGuard;
+// export default AdminGuard; // Hapus jika Anda menggunakan named export

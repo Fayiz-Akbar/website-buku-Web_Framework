@@ -1,81 +1,57 @@
 <?php
+// File: Backend/app/Http/Controllers/Api/PublisherController.php
 
-namespace App\Http\Controllers\Api; // <-- Namespace Anda
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Publisher; // Model Publisher
-use App\Http\Resources\PublisherResource; // Resource Anda
+use App\Models\Publisher;
+use App\Http\Resources\PublisherResource; // FIX: Import Resource
 use Illuminate\Http\Request;
-use Illuminate\Http\Response; // Untuk method destroy
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection; // Untuk method index
 
 class PublisherController extends Controller
 {
-    /**
-     * Menampilkan semua data publisher.
-     */
-    public function index(): AnonymousResourceCollection
+    // GET /api/admin/publishers
+    public function index()
     {
-        // Ambil semua publisher, urutkan berdasarkan nama
-        $publishers = Publisher::orderBy('name', 'asc')->get();
-        
-        // Kembalikan sebagai collection resource
+        // Menggunakan Resource untuk memastikan format data benar
+        $publishers = Publisher::orderBy('name')->get();
         return PublisherResource::collection($publishers);
     }
-
-    /**
-     * Menyimpan publisher baru.
-     */
-    public function store(Request $request): PublisherResource
+    
+    // POST /api/admin/publishers
+    public function store(Request $request)
     {
-        // Validasi input
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:publishers',
+        $request->validate([
+            'name' => 'required|string|max:255|unique:publishers,name',
+            'description' => 'nullable|string',
         ]);
 
-        $publisher = Publisher::create($validated);
-
-        // Kembalikan data yang baru dibuat melalui resource
+        $publisher = Publisher::create($request->all());
+        return PublisherResource::make($publisher);
+    }
+    
+    // GET /api/admin/publishers/{publisher}
+    public function show(Publisher $publisher)
+    {
         return PublisherResource::make($publisher);
     }
 
-    /**
-     * Menampilkan satu data publisher.
-     */
-    public function show(Publisher $publisher): PublisherResource
+    // PUT/PATCH /api/admin/publishers/{publisher}
+    public function update(Request $request, Publisher $publisher)
     {
-        // Laravel akan otomatis mencari Publisher berdasarkan ID (Route Model Binding)
-        // dan kembalikan 404 jika tidak ketemu.
-        
-        return PublisherResource::make($publisher);
-    }
-
-    /**
-     * Mengupdate data publisher.
-     */
-    public function update(Request $request, Publisher $publisher): PublisherResource
-    {
-        // Validasi input
-        $validated = $request->validate([
-            // Rule 'unique' harus mengabaikan ID publisher saat ini
-            'name' => 'required|string|max:255|unique:publishers,name,' . $publisher->id,
+        $request->validate([
+            'name' => 'sometimes|string|max:255|unique:publishers,name,' . $publisher->id,
+            'description' => 'nullable|string',
         ]);
 
-        $publisher->update($validated);
-
-        // Kembalikan data yang sudah di-update
+        $publisher->update($request->all());
         return PublisherResource::make($publisher);
     }
 
-    /**
-     * Menghapus data publisher (Soft Delete).
-     */
-    public function destroy(Publisher $publisher): Response
+    // DELETE /api/admin/publishers/{publisher}
+    public function destroy(Publisher $publisher)
     {
-        // Asumsi Model Publisher Anda sudah menggunakan trait 'SoftDeletes'
         $publisher->delete();
-
-        // Kembalikan response 204 (No Content)
-        return response()->noContent();
+        return response()->json(['message' => 'Penerbit berhasil dihapus.']);
     }
 }

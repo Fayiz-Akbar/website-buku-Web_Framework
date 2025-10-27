@@ -1,74 +1,57 @@
 <?php
+// File: Backend/app/Http/Controllers/Api/CategoryController.php
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\Category;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Validator; // Import Validator
+use App\Models\Category;
+use App\Http\Resources\CategoryResource; // FIX: Import Resource
+use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    /**
-     * Menampilkan semua data kategori.
-     */
+    // GET /api/admin/categories
     public function index()
     {
-        $categories = Category::orderBy('name', 'asc')->get();
-        return response()->json($categories);
+        // Menggunakan Resource untuk memastikan format data benar
+        $categories = Category::orderBy('name')->get();
+        return CategoryResource::collection($categories);
     }
-
-    /**
-     * Menyimpan kategori baru.
-     */
+    
+    // POST /api/admin/categories
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255|unique:categories',
+        $request->validate([
+            'name' => 'required|string|max:255|unique:categories,name',
+            'description' => 'nullable|string',
         ]);
-
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
 
         $category = Category::create($request->all());
-        return response()->json($category, 201); // 201 Created
+        return CategoryResource::make($category);
     }
-
-    /**
-     * Menampilkan satu data kategori.
-     */
+    
+    // GET /api/admin/categories/{category}
     public function show(Category $category)
     {
-        // 'Category $category' adalah Route Model Binding
-        // Laravel otomatis mencari Kategori berdasarkan ID di URL
-        return response()->json($category);
+        return CategoryResource::make($category);
     }
 
-    /**
-     * Mengupdate data kategori.
-     */
+    // PUT/PATCH /api/admin/categories/{category}
     public function update(Request $request, Category $category)
     {
-        $validator = Validator::make($request->all(), [
-            // 'unique' di-ignore untuk ID saat ini
-            'name' => 'required|string|max:255|unique:categories,name,' . $category->id,
+        $request->validate([
+            'name' => 'sometimes|string|max:255|unique:categories,name,' . $category->id,
+            'description' => 'nullable|string',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
-
         $category->update($request->all());
-        return response()->json($category);
+        return CategoryResource::make($category);
     }
 
-    /**
-     * Menghapus data kategori.
-     */
+    // DELETE /api/admin/categories/{category}
     public function destroy(Category $category)
     {
         $category->delete();
-        return response()->json(null, 204); // 204 No Content
+        return response()->json(['message' => 'Kategori berhasil dihapus.']);
     }
 }
