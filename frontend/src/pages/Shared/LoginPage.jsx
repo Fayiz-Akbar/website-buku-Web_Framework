@@ -21,7 +21,7 @@ export default function LoginPage() {
             
             // Cek role setelah login berhasil
             if (user.role === 'admin') {
-                navigate('/dashboard'); // Arahkan ke dashboard jika admin
+                navigate('/admin/dashboard'); // Arahkan ke dashboard jika admin
             } else {
                 navigate('/'); // Arahkan ke homepage jika bukan admin
             }

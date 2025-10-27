@@ -1,40 +1,30 @@
-// File: frontend/src/components/Layout/AdminGuard.jsx
+// File: frontend/src/components/Layout/AdminGuard.jsx (Contoh Perbaikan)
 
 import React from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
-// PERBAIKAN: Hapus ekstensi .jsx agar sesuai dengan App.jsx
-import { useAuth } from '../../Context/AuthContext'; 
+// FIX: Pastikan useNavigate di-import
+import { Navigate, Outlet, useNavigate } from 'react-router-dom'; 
+import { useAuth } from '../../Context/AuthContext.jsx'; // Sesuaikan path
 
+// Gunakan named export jika AdminGuard diexport sebagai const
 export const AdminGuard = ({ children }) => {
-    const { user, isLoggedIn, loading } = useAuth();
-    const location = useLocation();
+    const { user, isLoggedIn } = useAuth();
+    // FIX: Gunakan hook useNavigate di dalam fungsi komponen
+    const navigate = useNavigate(); 
 
-    if (loading) {
-        // Tampilkan loading indicator jika status auth masih loading
-        return (
-            <div className="flex justify-center items-center h-screen">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
-            </div>
-        );
-    }
-
-    // Jika sudah login DAN role adalah 'admin', izinkan akses
-    if (isLoggedIn && user?.role === 'admin') {
-        // Jika children diberikan (seperti <AdminGuard><AdminLayout /></AdminGuard>), render children
-        // Jika tidak (seperti <Route element={<AdminGuard><Dashboard /></AdminGuard>}), render Outlet
-        return children ? children : <Outlet />;
-    }
-
-    // Jika tidak login, redirect ke halaman login
     if (!isLoggedIn) {
-        return <Navigate to="/login" state={{ from: location }} replace />;
+        // Ini seharusnya sudah di-handle oleh AuthGuard
+        return <Navigate to="/login" replace />; 
     }
 
-    // Jika login tapi BUKAN admin, redirect ke halaman utama atau halaman 'unauthorized'
-    // Untuk saat ini, kita redirect ke halaman utama
-    return <Navigate to="/" replace />;
+    if (user && user.role !== 'admin') {
+        // Redirect non-admin ke homepage
+        // FIX: Gunakan navigate yang sudah dideklarasikan
+        return <Navigate to="/" replace />; 
+    }
+
+    // Jika user adalah admin, tampilkan children
+    return children ? children : <Outlet />;
 };
 
-// Export sebagai named export
-export default AdminGuard; // Anda bisa memilih export default atau named
-
+// Jika AdminGuard diexport default, gunakan ini
+// export default AdminGuard;

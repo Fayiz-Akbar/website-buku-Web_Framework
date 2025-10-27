@@ -1,34 +1,22 @@
+// File: frontend/src/components/Layout/GuestRoute.jsx (Contoh Perbaikan)
 
 import React from 'react';
-// [PERBAIKAN] Import Outlet
-import { Navigate, Outlet } from 'react-router-dom'; 
-import { useAuth } from '../../Context/AuthContext'; 
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../../Context/AuthContext.jsx'; // Sesuaikan path
 
-/**
- * Komponen ini membungkus halaman publik seperti Login dan Register.
- * Jika user sudah login, dia akan diarahkan ke halaman yang sesuai.
- * Jika belum, ia merender halaman anak (Outlet).
- */
-// [PERBAIKAN] Hapus prop 'element'
-const GuestRoute = () => { 
-  const { user, isLoggedIn } = useAuth();
+export default function GuestRoute() {
+    const { isLoggedIn, user } = useAuth(); // Ambil user object
 
-  // Tambahkan log untuk debug (opsional)
-  // console.log("GuestRoute Layout Check:", { isLoggedIn, userRole: user?.role });
-
-  if (isLoggedIn) {
-    // Jika sudah login, cek rolenya
-    if (user?.role === 'admin') { 
-      // Konsisten dengan App.jsx: /dashboard
-      return <Navigate to="/dashboard" replace />;
-    } else {
-      // Jika user biasa, lempar ke homepage
-      return <Navigate to="/" replace />;
+    if (isLoggedIn) {
+        // PERBAIKAN KRITIS: Cek role user
+        if (user && user.role === 'admin') {
+            // Jika Admin, redirect ke Admin Dashboard
+            return <Navigate to="/admin/dashboard" replace />;
+        }
+        // Jika User biasa, redirect ke homepage
+        return <Navigate to="/" replace />;
     }
-  }
 
-  // [PERBAIKAN] Jika belum login, izinkan akses ke halaman anak
-  return <Outlet />; 
-};
-
-export default GuestRoute;
+    // Jika belum login, tampilkan rute anak (misal: LoginPage, RegisterPage)
+    return <Outlet />;
+}
