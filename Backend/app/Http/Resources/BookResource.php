@@ -25,10 +25,9 @@ class BookResource extends JsonResource
             'published_year' => $book->published_year,
             'price' => (float) $book->price,
             'stock' => $book->stock,
-            
-            // FIX KRITIS: Ganti output key 'cover_image_url' menjadi 'cover_url'
-            // Nilai tetap diambil dari $book->cover_image_url (kolom DB/accessor)
-            'cover_url' => $book->cover_image_url, 
+
+            // gunakan accessor yang sudah benar
+            'cover_url' => $book->cover_url, 
 
             // 2. Relasi (Sudah menggunakan whenLoaded yang benar)
             'publisher' => PublisherResource::make($this->whenLoaded('publisher')),

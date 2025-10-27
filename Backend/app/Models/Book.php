@@ -36,13 +36,22 @@ class Book extends Model
     // Accessor ini akan membuat kunci 'cover_url' tersedia
     public function getCoverUrlAttribute(): ?string
     {
-        // Memberikan URL publik lengkap (url('storage/path/to/file'))
-        if ($this->cover_image_url) {
-            return url('storage/' . $this->cover_image_url);
+        $raw = $this->cover_image_url ?: null;
+        if (!$raw || trim($raw) === '') {
+            // fallback default
+            return asset('images/default-book.jpg');
         }
-        
-        // Mengembalikan null secara eksplisit jika gambar tidak ada (defensif)
-        return null; 
+
+        $raw = ltrim($raw);
+
+        // If already absolute URL (http/https), return as-is
+        if (preg_match('#^https?://#i', $raw)) {
+            return $raw;
+        }
+
+        // Otherwise, treat it as a file stored on the public disk
+        $path = ltrim($raw, '/');
+        return url('storage/' . $path);
     }
     
     // FIX KRITIS #2: Tambahkan 'cover_url' ke $appends agar selalu disertakan

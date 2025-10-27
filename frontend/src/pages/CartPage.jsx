@@ -166,9 +166,12 @@ export default function CartPage() {
                                 
                                 {/* Gambar */}
                                 <img 
-                                    src={item.book.cover_url} 
-                                    alt={item.book.title} 
+                                    src={item.book?.cover_url || `https://placehold.co/80x120/e2e8f0/64748b?text=${(item.book?.title || 'Book').split(' ').slice(0,3).join('+')}`}
+                                    alt={item.book?.title} 
                                     className="w-16 h-24 object-cover rounded-md ml-4 border" 
+                                    onError={(e) => {
+                                        e.currentTarget.src = `https://placehold.co/80x120/e2e8f0/64748b?text=${(item.book?.title || 'Book').split(' ').slice(0,3).join('+')}`;
+                                    }}
                                 />
 
                                 {/* Detail Item */}
