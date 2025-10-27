@@ -4,10 +4,26 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Plus, Edit, Trash2 } from 'lucide-react';
+import api from '../../api/axios';
 
 const API_URL = 'http://localhost:8000/api/books';
 const API_URL_ADMIN = 'http://localhost:8000/api/admin/books';
 const API_BASE = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '');
+
+// Helper: bentuk URL gambar yang valid dari berbagai kemungkinan field cover
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+const toImageUrl = (pathOrUrl) => {
+  if (!pathOrUrl) return null;
+  if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
+  const normalized = String(pathOrUrl).replace(/^\/?storage\/?/i, '');
+  return `${API_BASE_URL}/storage/${normalized}`;
+};
+const getCoverSrc = (book) =>
+  book.cover_url ||
+  toImageUrl(book.cover) ||
+  toImageUrl(book.cover_path) ||
+  toImageUrl(book.cover_image) ||
+  toImageUrl(book.image);
 
 const BookListPage = () => {
   const [books, setBooks] = useState([]);
@@ -48,10 +64,9 @@ const BookListPage = () => {
   if (error) return <div className="p-6 text-center text-red-600 bg-red-50 rounded-lg border border-red-200">{error}</div>;
 
   return (
-    <div className="space-y-6">
-      {/* Header aksi */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold text-slate-800">Manajemen Buku</h1>
+    <div className="p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Manajemen Buku</h1>
         <Link
           to="/admin/books/create"
           className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md shadow-sm transition-colors"
@@ -61,69 +76,83 @@ const BookListPage = () => {
         </Link>
       </div>
 
-            <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        {/* 9. Sesuaikan Kolom Tabel */}
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cover</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Judul</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Penulis</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kategori</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stok</th>
-                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {/* 10. Ganti 'dummyBooks' menjadi 'books' */}
-                        {books.length > 0 ? (
-                            books.map((book) => (
-                                <tr key={book.id}>
-                                    {/* Tampilkan data asli dari API */}
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <img 
-                                            src={book.cover_image_url || 'https://via.placeholder.com/80x120'} 
-                                            alt={book.title}
-                                            className="w-16 h-20 object-cover rounded"
-                                        />
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{book.title}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {/* Tampilkan relasi many-to-many */}
-                                        {book.authors.map(a => a.name).join(', ')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        {book.categories.map(c => c.name).join(', ')}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        Rp {new Intl.NumberFormat('id-ID').format(book.price)}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.stock}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                                        <Link to={`/admin/books/edit/${book.id}`} className="text-indigo-600 hover:text-indigo-900 mr-4">Edit</Link>
-                                        {/* Tambahkan onClick ke tombol Hapus */}
-                                        <button 
-                                            onClick={() => handleDelete(book.id)} 
-                                            className="text-red-600 hover:text-red-900"
-                                        >
-                                            Hapus
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan="7" className="px-6 py-4 text-center text-gray-500">
-                                    Belum ada data buku.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+      <div className="bg-white shadow-sm rounded-lg border">
+        <div className="overflow-x-auto">
+          <table className="min-w-full table-auto">
+            <thead className="bg-gray-50 sticky top-0 z-10">
+              <tr className="text-left text-gray-600 text-sm">
+                <th className="px-4 py-3 w-[80px]">Cover</th>
+                <th className="px-4 py-3">Judul</th>
+                <th className="px-4 py-3">Penulis</th>
+                <th className="px-4 py-3">Kategori</th>
+                <th className="px-4 py-3">Harga</th>
+                <th className="px-4 py-3 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {books?.map((book) => {
+                const imgSrc = getCoverSrc(book);
+                return (
+                  <tr key={book.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      {imgSrc ? (
+                        <img
+                          src={imgSrc}
+                          alt={book.title || 'Cover'}
+                          className="h-14 w-10 object-cover rounded border bg-gray-100"
+                          onError={(e) => (e.currentTarget.style.visibility = 'hidden')}
+                        />
+                      ) : (
+                        <div className="h-14 w-10 bg-gray-100 border rounded grid place-content-center text-[10px] text-gray-400">
+                          N/A
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium">{book.title}</div>
+                      
+                    </td>
+                    <td className="px-4 py-3">{book.author?.name || book.author_name || '-'}</td>
+                    <td className="px-4 py-3">{book.category?.name || book.category_name || '-'}</td>
+                    <td className="px-4 py-3">
+                      {typeof book.price === 'number'
+                        ? book.price.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
+                        : book.price || '-'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-2">
+                        <Link
+                          to={`/admin/books/edit/${book.id}`}
+                          className="text-indigo-600 hover:text-indigo-900 text-sm"
+                        >
+                          <Edit className="w-4 h-4 inline-block" />
+                          Edit
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(book.id)}
+                          className="text-red-600 hover:text-red-900 text-sm"
+                        >
+                          <Trash2 className="w-4 h-4 inline-block" />
+                          Hapus
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {(!books || books.length === 0) && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-10 text-center text-gray-500">
+                    Belum ada data buku.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default BookListPage;
